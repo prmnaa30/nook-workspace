@@ -1,23 +1,21 @@
 <template>
-  <div class="h-screen w-screen flex bg-slate-950 text-slate-200 font-sans overflow-hidden selection:bg-blue-500/30">
-    <Sidebar
-      :workspaces="workspaces"
-      :activeWorkspaceId="activeWorkspace?.id"
-      @create="handleCreate"
-      @delete="handleDelete" 
-      @select="handleSelect"
-      @toggle-favorite="handleToggleFavorite"
-    />
-
-    <WorkspaceDetails :workspace="activeWorkspace" @update="handleUpdate" />
-  </div>
+  <Sidebar
+    :workspaces="workspaces"
+    :activeWorkspace="activeWorkspace"
+    @create="handleCreate"
+    @delete="handleDelete"
+    @select="handleSelect"
+    @toggle-favorite="handleToggleFavorite"
+    @update-workspace="handleUpdate"
+  >
+    <WorkspaceDetails :workspace="activeWorkspace" @update="handleUpdate"/>
+  </Sidebar>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { getWorkspaces, addWorkspace, deleteWorkspace, updateWorkspace, toggleFavorite } from './services/workspaces.ts';
 import type { Workspace } from './services/workspaces.ts';
-
 import Sidebar from './components/Sidebar.vue';
 import WorkspaceDetails from './components/WorkspaceDetails.vue';
 
@@ -86,10 +84,10 @@ onMounted(() => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-slate-700/50 rounded-full;
+  @apply bg-neutral-200/50 dark:bg-neutral-800/50 rounded-full;
 }
 
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  @apply bg-slate-600;
+  @apply bg-neutral-300 dark:bg-neutral-700;
 }
 </style>
