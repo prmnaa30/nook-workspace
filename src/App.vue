@@ -1,70 +1,41 @@
 <template>
-  <Sidebar
-    :workspaces="workspaces"
-    :activeWorkspace="activeWorkspace"
-    @create="handleCreate"
-    @delete="handleDelete"
-    @select="handleSelect"
-    @toggle-favorite="handleToggleFavorite"
-    @update-workspace="handleUpdate"
-  >
-    <WorkspaceDetails :workspace="activeWorkspace" @update="handleUpdate"/>
+  <Sidebar>
+    <WorkspaceDetails :workspace="activeWorkspace" @update:workspace="handleWorkspaceUpdate"/>
   </Sidebar>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { getWorkspaces, addWorkspace, deleteWorkspace, updateWorkspace, toggleFavorite } from './services/workspaces.ts';
-import type { Workspace } from './services/workspaces.ts';
+import { onMounted, computed } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import WorkspaceDetails from './components/WorkspaceDetails.vue';
+import { useWorkspaceStore } from './stores/workspaces.ts';
 
-const workspaces = ref<Workspace[]>([]);
-const activeWorkspace = ref<Workspace | null>(null);
+const store = useWorkspaceStore();
+
+const workspaces = computed(() => store.workspaces);
+const activeWorkspace = computed(() => workspaces.value.find(w => w.id === store.currentWorkspaceId) || null);
 
 async function fetchWorkspaces() {
   try {
-    workspaces.value = await getWorkspaces();
+    await store.fetchWorkspaces();
 
     if (activeWorkspace.value && !workspaces.value.find(w => w.id === activeWorkspace.value?.id)) {
-      activeWorkspace.value = null;
+      store.selectWorkspace(activeWorkspace.value.id);
     }
   } catch (error) {
     console.error("Failed to load workspaces:", error);
   }
 }
 
-async function handleCreate(payload: { name: string, description: string }) {
-  await addWorkspace(payload.name, payload.description);
-  await fetchWorkspaces();
-}
-
-async function handleDelete(id: number) {
-  if (confirm('Are you sure you want to delete this workspace?')) {
-    await deleteWorkspace(id);
-    await fetchWorkspaces();
-  }
-}
-
-async function handleUpdate(id: number, payload: { name: string, description: string }) {
-  await updateWorkspace(id, payload.name, payload.description);
+async function handleWorkspaceUpdate(id: number, payload: { name: string, description: string }) {
+  await store.editWorkspace(id, payload.name, payload.description);
 
   await fetchWorkspaces();
 
   const updated = workspaces.value.find(w => w.id === id);
   if (updated) {
-    activeWorkspace.value = updated;
+    store.selectWorkspace(id);
   }
-}
-
-async function handleToggleFavorite(workspace: Workspace) {
-  const newStatus = workspace.is_favorite === 1 ? false : true;
-  await toggleFavorite(workspace.id, newStatus);
-  await fetchWorkspaces();
-}
-
-function handleSelect(workspace: Workspace) {
-  activeWorkspace.value = workspace;
 }
 
 onMounted(() => {

@@ -28,18 +28,13 @@
       <div class="relative">
         <UTabs v-model="activeTab" :items="tabItems" variant="link" class="gap-4">
           <template #shortcuts>
-            <Shortcuts :workspace="workspace" v-model:is-adding="isAddingShortcut" />
+            <Shortcuts :workspace="workspace" />
           </template>
         </UTabs>
 
         <div class="absolute top-0 right-0 p-1">
-          <UButton v-if="activeTab === '0'" @click="isAddingShortcut = !isAddingShortcut">
-            {{ isAddingShortcut ? 'Cancel' : 'Add' }}
-          </UButton>
-
-          <UButton v-else @click="isAddingShortcut = !isAddingShortcut">
-            {{ isAddingShortcut ? 'Cancel' : 'Add' }}
-          </UButton>
+          <AddShortcutModal :workspace="workspace" />
+          
         </div>
       </div>
     </div>
@@ -61,8 +56,8 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import type { Workspace } from '../services/workspaces';
-import { TabsItem } from '@nuxt/ui';
-import Shortcuts from './Shortcuts.vue';
+import type { TabsItem } from '@nuxt/ui';
+import Shortcuts from "./Shortcuts/index.vue";
 
 const tabItems = [
   {
@@ -82,7 +77,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', id: number, payload: { name: string, description: string }): void;
+  (e: 'update:workspace', id: number, payload: { name: string, description: string }): void;
 }>();
 
 const isEditingName = ref(false);
@@ -126,10 +121,8 @@ function saveChanges() {
     isEditingDesc.value = false;
 
     if (props.workspace && (finalName !== props.workspace.name || finalDesc !== props.workspace.description)) {
-      emit('update', props.workspace.id, { name: finalName, description: finalDesc });
+      emit('update:workspace', props.workspace.id, { name: finalName, description: finalDesc });
     }
   }
 }
-
-const isAddingShortcut = ref(false);
 </script>

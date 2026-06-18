@@ -39,21 +39,21 @@
               Favorites
             </div>
             <div class="space-y-0.5">
-              <div v-for="ws in favoriteWorkspaces" :key="ws.id" @click="$emit('select', ws)"
+              <div v-for="ws in favoriteWorkspaces" :key="ws.id" @click="selectWs(ws)"
                 class="group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-all duration-150 text-sm"
-                :class="activeWorkspace?.id === ws.id ? 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 hover:text-neutral-900 dark:hover:text-neutral-200'">
+                :class="store.currentWorkspaceId === ws.id ? 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 hover:text-neutral-900 dark:hover:text-neutral-200'">
                 <div class="flex items-center gap-2 min-w-0">
                   <UIcon name="i-ph-folder-duotone" class="size-4 shrink-0 text-blue-500" />
                   <span class="truncate font-medium">{{ ws.name }}</span>
                 </div>
                 <div
                   class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                  <button type="button" @click.stop="$emit('toggle-favorite', ws)"
+                  <button type="button" @click.stop="toggleFavorite(ws)"
                     class="p-0.5 rounded hover:bg-neutral-300 dark:hover:bg-neutral-700 text-yellow-500 transition-colors"
                     title="Remove from favorites">
                     <UIcon name="i-ph-star-fill" class="size-3.5" />
                   </button>
-                  <button type="button" @click.stop="$emit('delete', ws.id)"
+                  <button type="button" @click.stop="triggerDeleteModal(ws)"
                     class="p-0.5 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                     title="Delete workspace">
                     <UIcon name="i-ph-trash" class="size-3.5" />
@@ -74,21 +74,22 @@
               {{ searchQuery ? 'No matches found' : 'No workspaces yet' }}
             </div>
             <div class="space-y-0.5">
-              <div v-for="ws in recentWorkspaces" :key="ws.id" @click="$emit('select', ws)"
+              <div v-for="ws in recentWorkspaces" :key="ws.id" @click="selectWs(ws)"
                 class="group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-all duration-150 text-sm"
-                :class="activeWorkspace?.id === ws.id ? 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 hover:text-neutral-900 dark:hover:text-neutral-200'">
+                :class="store.currentWorkspaceId === ws.id ? 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 hover:text-neutral-900 dark:hover:text-neutral-200'">
                 <div class="flex items-center gap-2 min-w-0">
                   <UIcon name="i-ph-folder-duotone" class="size-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
                   <span class="truncate font-medium">{{ ws.name }}</span>
                 </div>
                 <div
                   class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                  <button type="button" @click.stop="$emit('toggle-favorite', ws)"
+                  <button type="button" @click.stop="toggleFavorite(ws)"
                     class="p-0.5 rounded hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-400 hover:text-yellow-500 transition-colors"
                     title="Add to favorites">
                     <UIcon name="i-ph-star" class="size-3.5" />
                   </button>
-                  <button type="button" @click.stop="$emit('delete', ws.id)"
+                  <!-- when deleting, show DeleteModal modal with delete-type = workspace -->
+                  <button type="button" @click.stop="triggerDeleteModal(ws)"
                     class="p-0.5 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                     title="Delete workspace">
                     <UIcon name="i-ph-trash" class="size-3.5" />
@@ -128,24 +129,24 @@
         <slot></slot>
       </div>
     </div>
+
+    <!-- Workspace Delete Modal -->
+    <DeleteModal 
+      ref="deleteModalRef" 
+      delete-type="Workspace" 
+      :target="workspaceToDelete?.name || ''" 
+      @confirm="handleConfirmDelete" 
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 import type { Workspace } from '../services/workspaces';
+import { useWorkspaceStore } from '../stores/workspaces';
+import DeleteModal from './DeleteModal.vue';
 
-const props = defineProps<{
-  workspaces: Workspace[];
-  activeWorkspace: Workspace | null;
-}>();
-
-const emit = defineEmits<{
-  (e: 'create', payload: { name: string, description: string }): void;
-  (e: 'delete', id: number): void;
-  (e: 'select', workspace: Workspace): void;
-  (e: 'toggle-favorite', workspace: Workspace): void;
-}>();
+const store = useWorkspaceStore();
 
 const open = ref(true);
 const searchQuery = ref('');
@@ -154,10 +155,13 @@ const newName = ref('');
 const newDescription = ref('');
 const workspaceInputRef = ref<any>(null);
 
+const deleteModalRef = ref<any>(null);
+const workspaceToDelete = ref<Workspace | null>(null);
+
 const filteredWorkspaces = computed(() => {
-  if (!searchQuery.value) return props.workspaces;
+  if (!searchQuery.value) return store.workspaces;
   const lowerQuery = searchQuery.value.toLowerCase();
-  return props.workspaces.filter(ws => ws.name.toLowerCase().includes(lowerQuery));
+  return store.workspaces.filter(ws => ws.name.toLowerCase().includes(lowerQuery));
 });
 
 const favoriteWorkspaces = computed(() => {
@@ -178,11 +182,32 @@ function toggleAddForm() {
   });
 }
 
-function submitCreate() {
+async function submitCreate() {
   if (!newName.value.trim()) return;
-  emit('create', { name: newName.value, description: newDescription.value });
+  await store.createWorkspace(newName.value, newDescription.value);
   newName.value = '';
   newDescription.value = '';
   isAddingWorkspace.value = false;
+}
+
+async function toggleFavorite(ws: Workspace) {
+  const newStatus = ws.is_favorite === 1 ? false : true;
+  await store.toggleWorkspaceFavorite(ws.id, newStatus);
+}
+
+function triggerDeleteModal(ws: Workspace) {
+  workspaceToDelete.value = ws;
+  deleteModalRef.value?.openModal();
+}
+
+async function handleConfirmDelete() {
+  if (workspaceToDelete.value) {
+    await store.removeWorkspace(workspaceToDelete.value.id);
+    workspaceToDelete.value = null;
+  }
+}
+
+function selectWs(ws: Workspace) {
+  store.selectWorkspace(ws.id);
 }
 </script>
