@@ -56,5 +56,3 @@ function scheduleReconnect() {
 }
 
 connectWebSocket();
-
-// mengenali suku terpencil yang orang tau di indonesia
