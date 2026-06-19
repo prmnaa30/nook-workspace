@@ -31,6 +31,20 @@ export async function addShortcut(
 	);
 }
 
+export async function editShortcut(
+	shortcutId: number,
+	title: string,
+	type: string,
+	path: string,
+	browserPath: string | null = null,
+): Promise<void> {
+	const db = await dbPromise;
+	await db.execute(
+		"UPDATE shortcuts SET title = $1, type = $2, path = $3, browser_path = $4 WHERE id = $5",
+		[title, type, path, browserPath, shortcutId],
+	);
+}
+
 export async function deleteShortcut(id: number): Promise<void> {
 	const db = await dbPromise;
 	await db.execute("DELETE FROM shortcuts WHERE id = $1", [id]);

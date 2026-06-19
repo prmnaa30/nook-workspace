@@ -33,8 +33,7 @@
         </UTabs>
 
         <div class="absolute top-0 right-0 p-1">
-          <AddShortcutModal :workspace="workspace" />
-          
+          <ShortcutFormModal :workspace="workspace" />
         </div>
       </div>
     </div>
@@ -58,6 +57,7 @@ import { ref, watch, nextTick } from 'vue';
 import type { Workspace } from '../services/workspaces';
 import type { TabsItem } from '@nuxt/ui';
 import Shortcuts from "./Shortcuts/index.vue";
+import ShortcutFormModal from './Shortcuts/ShortcutFormModal.vue';
 
 const tabItems = [
   {
