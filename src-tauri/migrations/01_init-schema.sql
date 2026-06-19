@@ -2,7 +2,9 @@ CREATE TABLE IF NOT EXISTS workspaces (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  is_favorite INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME
 );
 
 CREATE TABLE IF NOT EXISTS shortcuts (
@@ -12,5 +14,7 @@ CREATE TABLE IF NOT EXISTS shortcuts (
   type TEXT NOT NULL,
   path TEXT NOT NULL,
   browser_path TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME,
   FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );

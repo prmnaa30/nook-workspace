@@ -1,1 +1,0 @@
-ALTER TABLE workspaces ADD COLUMN is_favorite INTEGER DEFAULT 0;

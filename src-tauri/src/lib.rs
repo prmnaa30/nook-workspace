@@ -1,4 +1,5 @@
 mod commands;
+mod notes;
 mod ws_server;
 
 use std::fs;
@@ -15,12 +16,6 @@ pub fn run() {
             version: 1,
             description: "init_schema",
             sql: include_str!("../migrations/01_init-schema.sql"),
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 2,
-            description: "add_favorites",
-            sql: include_str!("../migrations/02_add_favorites.sql"),
             kind: MigrationKind::Up,
         },
     ];
