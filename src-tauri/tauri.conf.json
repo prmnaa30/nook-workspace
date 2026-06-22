@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "workstation-dock",
+  "productName": "nook",
   "version": "0.1.0",
-  "identifier": "com.pramana.workstation-dock",
+  "identifier": "com.nook",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Workstation Dock",
+        "title": "Nook",
         "width": 1280,
         "height": 760,
         "visible": false,
@@ -22,7 +22,7 @@
       },
       {
         "label": "floating",
-        "title": "Command Bar",
+        "title": "Nook Bar",
         "width": 650,
         "height": 400,
         "decorations": false,
