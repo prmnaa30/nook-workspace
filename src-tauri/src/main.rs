@@ -8,5 +8,5 @@ fn main() {
         "--disable-features=OverscrollHistoryNavigation",
     );
 
-    nook_lib::run()
+    workstation_dock_lib::run()
 }
