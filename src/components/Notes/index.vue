@@ -129,11 +129,42 @@ const filteredAndSortedNotes = computed(() => {
   return result;
 });
 
+watch(
+  () => props.workspace?.id,
+  (newWorkspaceId) => {
+    if (!newWorkspaceId) return;
+
+    const savedSortKey = localStorage.getItem(`ws_${newWorkspaceId}_notes_sortKey`);
+    if (savedSortKey) {
+      sortKey.value = savedSortKey;
+    } else {
+      sortKey.value = 'title';
+    }
+
+    const savedSortOrder = localStorage.getItem(`ws_${newWorkspaceId}_notes_sortOrder`);
+    if (savedSortOrder === 'asc' || savedSortOrder === 'desc') {
+      sortOrder.value = savedSortOrder;
+    } else {
+      sortOrder.value = 'asc';
+    }
+}, { immediate: true });
+
+watch(sortKey, (newVal) => {
+  if (props.workspace?.id) {
+    localStorage.setItem(`ws_${props.workspace.id}_notes_sortKey`, newVal);
+  }
+});
+
+watch(sortOrder, (newVal) => {
+  if (props.workspace?.id) {
+    localStorage.setItem(`ws_${props.workspace.id}_notes_sortOrder`, newVal);
+  }
+});
+
 watch(() => props.workspace, async (newWs) => {
   if (newWs) {
     await store.getNotes(newWs.id);
-    closeEditor();
-  } else {
+  } else {  
     notes.value = [];
     activeNote.value = null;
   }

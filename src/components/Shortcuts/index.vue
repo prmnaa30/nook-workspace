@@ -150,6 +150,38 @@ watch(() => props.workspace, async (newWs) => {
   }
 }, { immediate: true });
 
+watch(
+  () => props.workspace?.id,
+  (newWorkspaceId) => {
+    if (!newWorkspaceId) return;
+
+    const savedSortKey = localStorage.getItem(`ws_${newWorkspaceId}_shortcuts_sortKey`);
+    if (savedSortKey) {
+      sortKey.value = savedSortKey;
+    } else {
+      sortKey.value = 'title';
+    }
+
+    const savedSortOrder = localStorage.getItem(`ws_${newWorkspaceId}_shortcuts_sortOrder`);
+    if (savedSortOrder === 'asc' || savedSortOrder === 'desc') {
+      sortOrder.value = savedSortOrder;
+    } else {
+      sortOrder.value = 'asc';
+    }
+}, { immediate: true });
+
+watch(sortKey, (newVal) => {
+  if (props.workspace?.id) {
+    localStorage.setItem(`ws_${props.workspace.id}_shortcuts_sortKey`, newVal);
+  }
+});
+
+watch(sortOrder, (newVal) => {
+  if (props.workspace?.id) {
+    localStorage.setItem(`ws_${props.workspace.id}_shortcuts_sortOrder`, newVal);
+  }
+});
+
 async function handleConfirmDelete() {
   if (shortcutToDelete.value) {
     await store.deleteShortcut(shortcutToDelete.value.id);
