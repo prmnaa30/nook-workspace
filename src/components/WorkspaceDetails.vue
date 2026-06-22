@@ -51,11 +51,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import type { Workspace } from '../services/workspaces.service.ts';
 import type { TabsItem } from '@nuxt/ui';
 import Shortcuts from "./Shortcuts/index.vue";
-import Notes from "./Notes/index.vue"
+import Notes from "./Notes/index.vue";
+import { listen } from '@tauri-apps/api/event';
 
 const tabItems = [
   {
@@ -123,4 +124,14 @@ function saveChanges() {
     }
   }
 }
+
+onMounted(() => {
+  const unlisten = listen('open-note', () => {
+    activeTab.value = '1';
+  });
+
+  onUnmounted(() => {
+    unlisten.then(fn => fn())
+  })
+})
 </script>

@@ -10,6 +10,8 @@
     "core:default",
     "opener:default",
     "sql:default",
-    "sql:allow-execute"
+    "sql:allow-execute",
+    "global-shortcut:default",
+    "core:window:allow-hide"
   ]
 }

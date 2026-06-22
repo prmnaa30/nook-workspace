@@ -24,7 +24,7 @@
         "label": "floating",
         "title": "Command Bar",
         "width": 650,
-        "height": 100,
+        "height": 400,
         "decorations": false,
         "transparent": true,
         "visible": false,

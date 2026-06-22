@@ -4,6 +4,8 @@ import {
 	createNoteService,
 	deleteNoteService,
 	getNotesService,
+	searchAllNotesService,
+	SearchNote,
 	updateNoteService,
 	type Note,
 } from "../services/notes.service";
@@ -11,6 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 export const useNoteStore = defineStore("notes", () => {
 	const notes = ref<Note[]>([]);
+	const allNotes = ref<SearchNote[]>([]);
 	const activeNote = ref<Note | null>(null);
 
 	function sanitizeFilename(title: string): string {
@@ -18,6 +21,10 @@ export const useNoteStore = defineStore("notes", () => {
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, "-")
 			.replace(/(^-|-$)+/g, "");
+	}
+
+	async function getAllNotes() {
+		allNotes.value = await searchAllNotesService();
 	}
 
 	async function getNotes(workspaceId: number) {
@@ -113,8 +120,10 @@ export const useNoteStore = defineStore("notes", () => {
 	}
 
 	return {
+		allNotes,
 		notes,
 		activeNote,
+		getAllNotes,
 		getNotes,
 		createNote,
 		updateNote,

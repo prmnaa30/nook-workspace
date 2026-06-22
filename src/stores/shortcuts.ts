@@ -1,16 +1,23 @@
 import { defineStore } from "pinia";
 import {
+	searchAllShortcutsService,
 	createShortcutService,
 	deleteShortcutService,
 	updateShortcutService,
 	getShortcutsService,
 	type Shortcut,
+	type SearchShortcut,
 } from "../services/shortcuts.service";
 import { ref } from "vue";
 
 export const useShortcutStore = defineStore("shortcut", () => {
 	const shortcuts = ref<Shortcut[]>([]);
+	const allShortcuts = ref<SearchShortcut[]>([]);
 	const currentWorkspaceId = ref<number | null>(null);
+
+	async function getAllShortcuts() {
+		allShortcuts.value = await searchAllShortcutsService();
+	}
 
 	async function getShortcuts(workspaceId: number) {
 		currentWorkspaceId.value = workspaceId;
@@ -55,8 +62,10 @@ export const useShortcutStore = defineStore("shortcut", () => {
 	}
 
 	return {
+		allShortcuts,
 		shortcuts,
 		currentWorkspaceId,
+		getAllShortcuts,
 		getShortcuts,
 		createShortcut,
 		updateShortcut,

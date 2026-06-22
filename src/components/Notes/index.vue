@@ -164,6 +164,10 @@ watch(sortOrder, (newVal) => {
 watch(() => props.workspace, async (newWs) => {
   if (newWs) {
     await store.getNotes(newWs.id);
+
+    if (activeNote.value && activeNote.value.workspace_id !== newWs.id) {
+      closeEditor();
+    }
   } else {  
     notes.value = [];
     activeNote.value = null;

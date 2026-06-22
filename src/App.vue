@@ -1,21 +1,29 @@
 <template>
   <UApp>
-    <Sidebar>
+    <div v-if="windowLabel === 'floating'" class="w-full h-full">
+      <FloatingCommandBar />
+    </div>
+    <Sidebar v-else>
       <WorkspaceDetails :workspace="activeWorkspace" @update:workspace="handleWorkspaceUpdate"/>
     </Sidebar>
   </UApp>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import WorkspaceDetails from './components/WorkspaceDetails.vue';
 import { useWorkspaceStore } from './stores/workspaces.ts';
+import { useNoteStore } from './stores/notes.ts';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 
 const store = useWorkspaceStore();
+const noteStore = useNoteStore();
 
 const workspaces = computed(() => store.workspaces);
 const activeWorkspace = computed(() => workspaces.value.find(w => w.id === store.currentWorkspaceId) || null);
+const windowLabel = ref('main');
 
 async function fetchWorkspaces() {
   try {
@@ -40,27 +48,39 @@ async function handleWorkspaceUpdate(id: number, payload: { name: string, descri
   }
 }
 
-onMounted(() => {
-  fetchWorkspaces();
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && store.currentWorkspaceId !== null) {
+    store.selectWorkspace(null);
+  }
+};
+
+onMounted(async () => {
+  window.addEventListener('keydown', handleKeyDown);
+  try {
+    const currentWindow = getCurrentWindow();
+    windowLabel.value = currentWindow.label;
+  } catch (error) {
+    console.warn("Not in the Tauri desktop environment: ", error);
+  }
+  
+  if (windowLabel.value === 'main') {
+    listen<{ workspaceId: number, noteId: number}>('open-note', async (event) => {
+      const { workspaceId, noteId } = event.payload;
+      
+      store.selectWorkspace(workspaceId);
+      
+      await noteStore.getNotes(workspaceId);
+      const targetNote = noteStore.notes.find(n => n.id === noteId);
+      if (targetNote) {
+        noteStore.activeNote = targetNote;
+      }
+    })
+  }
+
+  await fetchWorkspaces();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
 });
 </script>
-
-<style>
-@reference "tailwindcss";
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-neutral-200/50 dark:bg-neutral-800/50 rounded-full;
-}
-
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  @apply bg-neutral-300 dark:bg-neutral-700;
-}
-</style>

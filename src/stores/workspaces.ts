@@ -41,7 +41,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 		await getWorkspaces();
 	}
 
-	function selectWorkspace(id: number) {
+	function selectWorkspace(id: number | null) {
 		currentWorkspaceId.value = id;
 	}
 

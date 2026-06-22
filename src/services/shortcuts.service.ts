@@ -9,6 +9,20 @@ export interface Shortcut {
 	browser_path: string | null;
 }
 
+export interface SearchShortcut extends Shortcut {
+	workspace_name: string;
+}
+
+export async function searchAllShortcutsService(): Promise<SearchShortcut[]> {
+	const db = await dbPromise;
+	return db.select(`
+		SELECT s.*, w.name as workspace_name 
+		FROM shortcuts s 
+		JOIN workspaces w ON s.workspace_id = w.id 
+		ORDER BY s.title ASC
+	`);
+}
+
 export async function getShortcutsService(workspadeId: number): Promise<Shortcut[]> {
 	const db = await dbPromise;
 	return await db.select(

@@ -7,6 +7,20 @@ export interface Note {
 	filename: string;
 }
 
+export interface SearchNote extends Note {
+	workspace_name: string;
+}
+
+export async function searchAllNotesService(): Promise<SearchNote[]> {
+	const db = await dbPromise;
+	return db.select(`
+		SELECT n.*, w.name as workspace_name 
+		FROM notes n 
+		JOIN workspaces w ON n.workspace_id = w.id 
+		ORDER BY n.title ASC
+	`)
+}
+
 export async function getNotesService(workspaceId: number): Promise<Note[]> {
 	const db = await dbPromise;
 	return db.select(

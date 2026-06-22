@@ -1,24 +1,16 @@
 <template>
   <div class="flex flex-1 h-screen w-screen bg-neutral-50 dark:bg-neutral-950 overflow-hidden">
-    <!-- USidebar component from Nuxt UI -->
-    <USidebar
-      v-model:open="open"
-      variant="inset"
-      collapsible="icon"
-      :ui="{
-        container: 'h-full'
-      }" 
-      class="border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 shrink-0"
-    >
+    <USidebar v-model:open="open" variant="inset" collapsible="icon" :ui="{
+      container: 'h-full'
+    }" class="border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 shrink-0">
       <template #header>
-        <div class="flex items-center gap-2.5 px-1 py-1P[
-        ]">
-          <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-white overflow-hidden">
-            <img src="../assets/icons/icon.svg" class="size-6.75 object-contain" />
+        <div class="flex items-center gap-2.5 px-1 py-1">
+          <div class="flex items-center justify-center rounded-lg border border-slate-950 overflow-hidden">
+            <img src="../assets/icons/icon.svg" class="size-8 object-contain" />
           </div>
           <div class="flex flex-col leading-none">
-            <span class="font-bold text-neutral-800 dark:text-neutral-200">Workstation</span>
-            <span class="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Shortcut Center</span>
+            <span class="font-bold text-neutral-800 dark:text-neutral-200">Nook</span>
+            <span class="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Your Workflow Manager</span>
           </div>
         </div>
       </template>
@@ -28,7 +20,8 @@
         <!-- Search bar -->
         <div class="px-1">
           <UInput v-model="searchQuery" icon="i-ph-magnifying-glass" placeholder="Search workspaces..." color="neutral"
-            variant="outline" class="w-full" size="md" />
+            variant="outline" class="w-full" size="md"
+             :ui="{ base: 'ring-slate-700 focus-visible:ring-1 focus-visible:ring-slate-500 transition-all duration-200' }" />
         </div>
 
         <div class="flex-1 overflow-y-auto pr-1">
@@ -88,7 +81,7 @@
                     title="Add to favorites">
                     <UIcon name="i-ph-star" class="size-3.5" />
                   </button>
-                  <!-- when deleting, show DeleteModal modal with delete-type = workspace -->
+                  
                   <button type="button" @click.stop="triggerDeleteModal(ws)"
                     class="p-0.5 rounded hover:bg-red-500/10 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                     title="Delete workspace">
@@ -107,12 +100,18 @@
           <form v-if="isAddingWorkspace" @submit.prevent="submitCreate"
             class="flex flex-col gap-2 p-2 bg-neutral-100/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-sm">
             <UInput ref="workspaceInputRef" v-model="newName" placeholder="Workspace name..." size="sm" required
-              class="w-full text-xs" />
-            <UInput v-model="newDescription" placeholder="Description (optional)" size="sm" class="w-full text-xs" />
+              class="w-full text-xs"
+              :ui="{ base: 'ring-slate-700 focus-visible:ring-1 focus-visible:ring-slate-500 transition-all duration-200' }" />
+            <UInput v-model="newDescription" placeholder="Description (optional)" size="sm" class="w-full text-xs"
+              :ui="{ base: 'ring-slate-700 focus-visible:ring-1 focus-visible:ring-slate-500 transition-all duration-200' }" />
+
             <div class="flex justify-end gap-1.5 mt-1">
-              <UButton type="button" size="xs" color="neutral" variant="ghost" @click="isAddingWorkspace = false">Cancel
+              <UButton type="button" size="xs" color="neutral" variant="soft" @click="isAddingWorkspace = false" class="cursor-pointer">
+                Cancel
               </UButton>
-              <UButton type="submit" size="xs" color="primary">Save</UButton>
+              <UButton type="submit" size="xs" color="primary" class="cursor-pointer">
+                Save
+              </UButton>
             </div>
           </form>
           <UButton v-else icon="i-ph-plus" label="Add Workspace" color="neutral" variant="ghost"
@@ -131,12 +130,8 @@
     </div>
 
     <!-- Workspace Delete Modal -->
-    <DeleteModal 
-      ref="deleteModalRef" 
-      delete-type="Workspace" 
-      :target="workspaceToDelete?.name || ''" 
-      @confirm="handleConfirmDelete" 
-    />
+    <DeleteModal ref="deleteModalRef" delete-type="Workspace" :target="workspaceToDelete?.name || ''"
+      @confirm="handleConfirmDelete" />
   </div>
 </template>
 

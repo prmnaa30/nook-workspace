@@ -1,7 +1,7 @@
 <template>
   <div v-if="activeNote"
     class="flex-1 flex flex-col bg-slate-900/40 border border-slate-700/50 rounded-xl overflow-hidden shadow-lg backdrop-blur-md h-full min-h-[500px]">    <!-- Canvas Editor -->
-    <div class="flex-1 overflow-y-auto overscroll-contain">
+    <div class="flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
       <UEditor
         v-model="noteContent" 
         v-slot="{ editor }"
