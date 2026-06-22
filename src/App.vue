@@ -1,7 +1,9 @@
 <template>
-  <Sidebar>
-    <WorkspaceDetails :workspace="activeWorkspace" @update:workspace="handleWorkspaceUpdate"/>
-  </Sidebar>
+  <UApp>
+    <Sidebar>
+      <WorkspaceDetails :workspace="activeWorkspace" @update:workspace="handleWorkspaceUpdate"/>
+    </Sidebar>
+  </UApp>
 </template>
 
 <script setup lang="ts">

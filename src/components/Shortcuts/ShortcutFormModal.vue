@@ -70,10 +70,6 @@ const props = defineProps<{
   initialValue?: Shortcut
 }>()
 
-// const emit = defineEmits<{
-//   (e: 'update:submitEdit', shortcutId: string): void;
-// }>();
-
 const isOpen = ref(false);
 watch(isOpen, (newValue) => {
   if (newValue) {

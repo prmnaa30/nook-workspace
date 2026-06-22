@@ -25,9 +25,13 @@
         </p>
       </div>
 
-      <UTabs v-model="activeTab" :items="tabItems" variant="link" class="relative gap-4">
+      <UTabs v-model="activeTab" :items="tabItems" variant="link" class="flex-1 flex flex-col min-h-0 relative gap-4" :ui="{ content: 'flex-1 flex flex-col min-h-0' }">
         <template #shortcuts>
           <Shortcuts :workspace="workspace" />
+        </template>
+
+        <template #notes>
+          <Notes :workspace="workspace" />
         </template>
       </UTabs>
     </div>
@@ -51,6 +55,7 @@ import { ref, watch, nextTick } from 'vue';
 import type { Workspace } from '../services/workspaces.service.ts';
 import type { TabsItem } from '@nuxt/ui';
 import Shortcuts from "./Shortcuts/index.vue";
+import Notes from "./Notes/index.vue"
 
 const tabItems = [
   {

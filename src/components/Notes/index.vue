@@ -1,227 +1,161 @@
 <template>
-  <div class="h-full flex flex-col p-6">
+  <NoteEditor v-if="activeNote" :workspace="workspace" @back="closeEditor" @delete="triggerDeleteModal(activeNote)" />
 
-    <!-- HEADER: Tab Navigasi Catatan -->
-    <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
-      <div class="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
-        <!-- Looping tab catatan -->
-        <button v-for="note in notesList" :key="note" @click="selectNote(note)"
-          class="px-4 py-2 rounded-t-lg text-sm font-medium transition-all whitespace-nowrap"
-          :class="activeNote === note ? 'bg-indigo-600 border-t border-indigo-400 text-white shadow-[0_-4px_15px_rgba(79,70,229,0.3)]' : 'bg-slate-900/50 text-slate-400 hover:text-slate-200'">
-          📄 {{ note }}
-        </button>
-      </div>
+  <div v-else class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4 h-full">
+    <div class="absolute top-0 right-0 p-1 flex gap-1 z-20">
+      <SearchSortBar
+        v-model:search="searchQuery"
+        v-model:sort-key="sortKey"
+        v-model:sort-order="sortOrder"
+        :sort-options="sortOptions"
+      />
 
-      <button @click="createNewNote"
-        class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm border border-slate-700 whitespace-nowrap ml-4 transition-colors">
-        + New Note
-      </button>
+      <NoteFormModal :workspace="workspace!" />
     </div>
 
-    <!-- AREA EDITOR / PREVIEW -->
-    <div v-if="activeNote"
-      class="flex-1 flex flex-col bg-slate-900/40 border border-slate-700/50 rounded-xl overflow-hidden shadow-lg backdrop-blur-md">
+    <div v-if="filteredAndSortedNotes.length === 0"
+      class="flex-1 flex flex-col items-center justify-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-800/10 min-h-[200px]">
+      <p class="text-slate-500">{{ searchQuery ? 'No notes found.' : 'No notes created yet.' }}</p>
+    </div>
 
-      <!-- Toolbar Catatan Aktif -->
-      <div class="bg-slate-800/80 border-b border-slate-700 p-3 flex justify-between items-center">
-        <div class="flex items-center gap-4">
-          <h3 class="text-white font-semibold flex items-center gap-2">
-            {{ activeNote }}
-            <span v-if="isSaving" class="text-xs text-indigo-400 font-normal animate-pulse">(Saving...)</span>
-          </h3>
-          <button @click="deleteCurrentNote" class="text-xs text-red-400 hover:text-red-300 hover:underline">Delete
-            File</button>
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-for="note in filteredAndSortedNotes" :key="note.id" @click="openNoteEditor(note)"
+        class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700 rounded-xl overflow-hidden flex flex-col z-10 cursor-pointer transition-all shadow-md hover:shadow-lg duration-200">
+        <div
+          class="h-14 w-full relative transition-all duration-200 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-indigo-500/10">
+          <button @click.stop="triggerDeleteModal(note)"
+            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all border border-slate-800/60"
+            title="Delete Note">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div class="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-all z-20">
+            <NoteFormModal :workspace="workspace!" :initial-value="note">
+              <button @click.stop
+                class="p-1 bg-slate-950/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-md transition-all border border-slate-800/60"
+                title="Rename Note">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+            </NoteFormModal>
+          </div>
         </div>
 
-        <!-- Toggle Switch Edit/Preview -->
-        <div class="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-          <button @click="isEditing = true" class="px-4 py-1 text-xs font-medium rounded-md transition-all"
-            :class="isEditing ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:text-white'">Edit</button>
-          <button @click="isEditing = false" class="px-4 py-1 text-xs font-medium rounded-md transition-all"
-            :class="!isEditing ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:text-white'">Preview</button>
+        <div
+          class="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800/80 flex items-center justify-center -mt-4 ml-4 relative z-10 shadow-md">
+          <span class="text-lg">📄</span>
+        </div>
+
+        <div class="p-4 pt-2.5 flex flex-col gap-2">
+          <h4 class="font-semibold text-slate-200 text-sm tracking-wide truncate" :title="note.title">
+            {{ note.title }}
+          </h4>
+          <div
+            class="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1 bg-slate-950/40 p-2 rounded border border-slate-800/40 truncate w-full"
+            :title="note.filename">
+            <span class="truncate">{{ note.filename }}</span>
+          </div>
         </div>
       </div>
-
-      <!-- Kanvas Pengetikan / Pembacaan -->
-      <div class="flex-1 relative">
-        <!-- Textarea untuk mengetik -->
-        <textarea v-if="isEditing" v-model="noteContent" @input="debouncedSave"
-          class="absolute inset-0 w-full h-full bg-transparent text-slate-200 p-6 focus:outline-none resize-none font-mono text-sm leading-relaxed custom-scrollbar"
-          placeholder="Tulis ide brilian Anda menggunakan format Markdown... (# Heading, - List, **Bold**)"></textarea>
-
-        <!-- Render Markdown ke HTML -->
-        <div v-else class="absolute inset-0 w-full h-full p-6 overflow-y-auto custom-scrollbar markdown-preview"
-          v-html="renderedMarkdown"></div>
-      </div>
     </div>
-
-    <!-- JIKA BELUM ADA CATATAN -->
-    <div v-else
-      class="flex-1 flex flex-col items-center justify-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-800/10">
-      <div class="text-4xl mb-3 opacity-50">📝</div>
-      <p class="text-slate-500 font-medium">Belum ada catatan di Workspace ini.</p>
-      <button @click="createNewNote"
-        class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
-        Buat Catatan Pertama
-      </button>
-    </div>
-
   </div>
+
+  <DeleteModal
+    ref="deleteModalRef"
+    delete-type="Note"
+    :target="noteToDelete?.title || ''"
+    @confirm="handleConfirmDelete"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
-import { marked } from 'marked';
-import type { Workspace } from '../../services/workspaces';
+import type { Workspace } from '../../services/workspaces.service';
+import type { Note } from '../../services/notes.service';
+import { useNoteStore } from '../../stores/notes';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps<{ workspace: Workspace | null }>();
 
-const notesList = ref<string[]>([]);
-const activeNote = ref<string | null>(null);
-const noteContent = ref('');
-const isEditing = ref(false);
-const isSaving = ref(false);
+const store = useNoteStore();
+const { notes, activeNote } = storeToRefs(store);
 
-const renderedMarkdown = computed(() => {
-  return marked.parse(noteContent.value) || '<p class="text-slate-500 italic">Catatan masih kosong...</p>';
+const searchQuery = ref('');
+const sortKey = ref('title');
+const sortOrder = ref<'asc' | 'desc'>('asc');
+
+const sortOptions = [
+  { label: 'Name', value: 'title' },
+  { label: 'Date Created', value: 'created_at' },
+  { label: 'Date Modified', value: 'updated_at' }
+];
+
+const deleteModalRef = ref<any>(null);
+const noteToDelete = ref<Note | null>(null);
+
+const filteredAndSortedNotes = computed(() => {
+  if (!notes.value) return [];
+
+  let result = [...notes.value];
+
+  // Searching
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(note =>
+      note.title.toLowerCase().includes(query) ||
+      (note.filename && note.filename.toLowerCase().includes(query))
+    );
+  }
+
+  // Sorting
+  result.sort((a: any, b: any) => {
+    let valA = a[sortKey.value] || '';
+    let valB = b[sortKey.value] || '';
+
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      valA = valA.toLowerCase();
+      valB = valB.toLowerCase();
+    }
+
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  return result;
 });
 
 watch(() => props.workspace, async (newWs) => {
   if (newWs) {
-    await fetchNotesList(newWs.id);
-    if (notesList.value.length > 0) {
-      selectNote(notesList.value[0]);
-    } else {
-      activeNote.value = null;
-    }
+    await store.getNotes(newWs.id);
+    closeEditor();
+  } else {
+    notes.value = [];
+    activeNote.value = null;
   }
 }, { immediate: true });
 
-async function fetchNotesList(workspaceId: number) {
-  try {
-    notesList.value = await invoke('list_notes', { workspaceId });
-  } catch (e) {
-    console.error("Gagal memuat list notes:", e);
-  }
+function openNoteEditor(note: Note) {
+  activeNote.value = note;
 }
 
-async function selectNote(title: string) {
-  activeNote.value = title;
-  isEditing.value = false;
-  try {
-    noteContent.value = await invoke('read_note', {
-      workspaceId: props.workspace!.id,
-      title
-    });
-  } catch (e) {
-    console.error("Gagal membaca file:", e);
-  }
+function closeEditor() {
+  activeNote.value = null;
 }
 
-async function createNewNote() {
-  const title = prompt("Masukkan judul catatan (tanpa ekstensi .md):");
-  if (title && title.trim()) {
-    const cleanTitle = title.trim();
-    await invoke('write_note', {
-      workspaceId: props.workspace!.id,
-      title: cleanTitle,
-      content: `# ${cleanTitle}\n\n`
-    });
-
-    await fetchNotesList(props.workspace!.id);
-    selectNote(cleanTitle);
-    isEditing.value = true;
-  }
+function triggerDeleteModal(note: Note) {
+  noteToDelete.value = note;
+  deleteModalRef.value?.openModal();
 }
 
-async function deleteCurrentNote() {
-  if (!activeNote.value || !props.workspace) return;
-  if (confirm(`Apakah Anda yakin ingin menghapus file "${activeNote.value}.md" selamanya dari komputer Anda?`)) {
-    await invoke('delete_note', {
-      workspaceId: props.workspace.id,
-      title: activeNote.value
-    });
-
-    await fetchNotesList(props.workspace.id);
-    if (notesList.value.length > 0) {
-      selectNote(notesList.value[0]);
-    } else {
-      activeNote.value = null;
-    }
+async function handleConfirmDelete() {
+  if (noteToDelete.value && props.workspace) {
+    await store.deleteNote(props.workspace.id, noteToDelete.value.id, noteToDelete.value.filename);
+    noteToDelete.value = null;
   }
-}
-
-// Auto Save, Every 1 Sec
-let timeout: ReturnType<typeof setTimeout>;
-function debouncedSave() {
-  isSaving.value = true;
-  clearTimeout(timeout);
-  timeout = setTimeout(async () => {
-    if (props.workspace && activeNote.value) {
-      await invoke('write_note', {
-        workspaceId: props.workspace.id,
-        title: activeNote.value,
-        content: noteContent.value
-      });
-      isSaving.value = false;
-    }
-  }, 1000);
 }
 </script>
-
-<style>
-@reference "tailwindcss";
-
-.markdown-preview h1 {
-  @apply text-3xl font-bold mb-4 text-white;
-}
-
-.markdown-preview h2 {
-  @apply text-2xl font-bold mb-3 mt-8 text-white border-b border-slate-700 pb-2;
-}
-
-.markdown-preview h3 {
-  @apply text-xl font-bold mb-3 mt-6 text-slate-200;
-}
-
-.markdown-preview p {
-  @apply mb-4 text-slate-300 leading-relaxed;
-}
-
-.markdown-preview ul {
-  @apply list-disc pl-6 mb-4 text-slate-300;
-}
-
-.markdown-preview ol {
-  @apply list-decimal pl-6 mb-4 text-slate-300;
-}
-
-.markdown-preview li {
-  @apply mb-1;
-}
-
-.markdown-preview blockquote {
-  @apply border-l-4 border-indigo-500 pl-4 py-1 italic text-slate-400 bg-slate-800/30 rounded-r-lg mb-4;
-}
-
-.markdown-preview code {
-  @apply bg-slate-900 text-indigo-300 px-1.5 py-0.5 rounded text-sm font-mono border border-slate-800;
-}
-
-.markdown-preview pre {
-  @apply bg-slate-950 p-4 rounded-xl overflow-x-auto mb-4 border border-slate-800 shadow-inner;
-}
-
-.markdown-preview pre code {
-  @apply bg-transparent border-0 text-slate-300 p-0 text-sm;
-}
-
-.markdown-preview a {
-  @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors;
-}
-
-.markdown-preview hr {
-  @apply border-slate-700 my-8;
-}
-</style>

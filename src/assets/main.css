@@ -68,3 +68,7 @@
   --color-slate-100: var(--text);
   --color-slate-50: var(--background);
 }
+
+html, body {
+  overscroll-behavior: none;
+}

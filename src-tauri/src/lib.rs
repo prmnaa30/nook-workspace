@@ -18,6 +18,12 @@ pub fn run() {
             sql: include_str!("../migrations/01_init-schema.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 2,
+            description: "add notes table to handle multiple notes",
+            sql: include_str!("../migrations/02_add_notes_table.sql"),
+            kind: MigrationKind::Up,
+        }
     ];
 
     let (tx, _rx) = broadcast::channel::<String>(10);
@@ -77,7 +83,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::greet,
-            commands::execute_shortcut
+            commands::execute_shortcut,
+            notes::read_note,
+            notes::write_note,
+            notes::rename_note_file,
+            notes::delete_note_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
