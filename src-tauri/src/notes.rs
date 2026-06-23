@@ -5,7 +5,7 @@ use tauri::Manager;
 pub async fn read_note(app: tauri::AppHandle, filename: String) -> Result<String, String> {
     if let Ok(home_dir) = app.path().home_dir() {
         let note_path = home_dir
-            .join(".workstation_data")
+            .join(".nook")
             .join("notes")
             .join(&filename);
 
@@ -27,7 +27,7 @@ pub async fn write_note(
 ) -> Result<(), String> {
     if let Ok(home_dir) = app.path().home_dir() {
         let note_path = home_dir
-            .join(".workstation_data")
+            .join(".nook")
             .join("notes")
             .join(&filename);
         return fs::write(note_path, content).map_err(|e| format!("Failed to create note: {}", e));
@@ -42,7 +42,7 @@ pub async fn rename_note_file(
     new_filename: String,
 ) -> Result<(), String> {
     if let Ok(home_dir) = app.path().home_dir() {
-        let notes_dir = home_dir.join(".workstation_data").join("notes");
+        let notes_dir = home_dir.join(".nook").join("notes");
         let old_path = notes_dir.join(&old_filename);
         let new_path = notes_dir.join(&new_filename);
         if old_path.exists() {
@@ -58,7 +58,7 @@ pub async fn rename_note_file(
 pub async fn delete_note_file(app: tauri::AppHandle, filename: String) -> Result<(), String> {
     if let Ok(home_dir) = app.path().home_dir() {
         let note_path = home_dir
-            .join(".workstation_data")
+            .join(".nook")
             .join("notes")
             .join(&filename);
         if note_path.exists() {

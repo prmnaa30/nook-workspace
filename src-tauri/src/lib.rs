@@ -123,7 +123,7 @@ pub fn run() {
             }
 
             if let Ok(home_dir) = app.path().home_dir() {
-                let notes_dir = home_dir.join(".workstation_data").join("notes");
+                let notes_dir = home_dir.join(".nook").join("notes");
                 if !notes_dir.exists() {
                     fs::create_dir_all(&notes_dir).expect("Failed to create notes directory.")
                 }
