@@ -8,13 +8,6 @@
 			footer: 'self-end',
 		}"
 	>
-		<slot>
-			<UButton
-				title="Add Note"
-				trailing-icon="i-lucide-plus"
-				variant="ghost"
-			/>
-		</slot>
 
 		<template #body>
 			<div class="flex flex-col gap-3">
@@ -93,4 +86,12 @@ async function submitNote() {
 
 	isOpen.value = false;
 }
+
+function openModal() {
+	isOpen.value = true;
+}
+
+defineExpose({
+	openModal,
+});
 </script>

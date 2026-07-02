@@ -18,7 +18,12 @@
 				:sort-options="sortOptions"
 			/>
 
-			<NoteFormModal :workspace="workspace!" />
+			<UButton
+				title="Add Note"
+				trailing-icon="i-lucide-plus"
+				variant="ghost"
+				@click="triggerAddNoteModal"
+			/>
 		</div>
 
 		<div
@@ -32,86 +37,14 @@
 			v-else
 			class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
 		>
-			<div
+			<NoteCard
 				v-for="note in filteredAndSortedNotes"
 				:key="note.id"
-				@click="openNoteEditor(note)"
-				class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700 rounded-xl overflow-hidden flex flex-col z-10 cursor-pointer transition-all shadow-md hover:shadow-lg duration-200"
-			>
-				<div
-					class="h-14 w-full relative transition-all duration-200 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-indigo-500/10"
-				>
-					<button
-						@click.stop="triggerDeleteModal(note)"
-						class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all border border-slate-800/60"
-						title="Delete Note"
-					>
-						<svg
-							class="w-3.5 h-3.5"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-					</button>
-
-					<div
-						class="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-all z-20"
-					>
-						<NoteFormModal
-							:workspace="workspace!"
-							:initial-value="note"
-						>
-							<button
-								@click.stop
-								class="p-1 bg-slate-950/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-md transition-all border border-slate-800/60"
-								title="Rename Note"
-							>
-								<svg
-									class="w-3.5 h-3.5"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-									/>
-								</svg>
-							</button>
-						</NoteFormModal>
-					</div>
-				</div>
-
-				<div
-					class="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800/80 flex items-center justify-center -mt-4 ml-4 relative z-10 shadow-md"
-				>
-					<span class="text-lg">📄</span>
-				</div>
-
-				<div class="p-4 pt-2.5 flex flex-col gap-2">
-					<h4
-						class="font-semibold text-slate-200 text-sm tracking-wide truncate"
-						:title="note.title"
-					>
-						{{ note.title }}
-					</h4>
-					<div
-						class="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1 bg-slate-950/40 p-2 rounded border border-slate-800/40 truncate w-full"
-						:title="note.filename"
-					>
-						<span class="truncate">{{ note.filename }}</span>
-					</div>
-				</div>
-			</div>
+				:note="note"
+				@click="openNoteEditor"
+				@edit="triggerEditModal"
+				@delete="triggerDeleteModal"
+			/>
 		</div>
 	</div>
 
@@ -121,14 +54,21 @@
 		:target="noteToDelete?.title || ''"
 		@confirm="handleConfirmDelete"
 	/>
+
+	<NoteFormModal
+		ref="noteFormModalRef"
+		:workspace="workspace!"
+		:initial-value="noteToEdit!"
+	/>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, nextTick } from "vue";
 import type { Workspace } from "../../services/workspaces.service";
 import type { Note } from "../../services/notes.service";
 import { useNoteStore } from "../../stores/notes";
 import { storeToRefs } from "pinia";
+import NoteCard from "./NoteCard.vue";
 
 const props = defineProps<{ workspace: Workspace | null }>();
 
@@ -147,6 +87,9 @@ const sortOptions = [
 
 const deleteModalRef = ref<any>(null);
 const noteToDelete = ref<Note | null>(null);
+
+const noteFormModalRef = ref<any>(null);
+const noteToEdit = ref<Note | null>(null);
 
 const filteredAndSortedNotes = computed(() => {
 	if (!notes.value) return [];
@@ -243,6 +186,20 @@ function closeEditor() {
 function triggerDeleteModal(note: Note) {
 	noteToDelete.value = note;
 	deleteModalRef.value?.openModal();
+}
+
+function triggerAddNoteModal() {
+	noteToEdit.value = null;
+	nextTick(() => {
+		noteFormModalRef.value?.openModal();
+	});
+}
+
+function triggerEditModal(note: Note) {
+	noteToEdit.value = note;
+	nextTick(() => {
+		noteFormModalRef.value?.openModal();
+	});
 }
 
 async function handleConfirmDelete() {
