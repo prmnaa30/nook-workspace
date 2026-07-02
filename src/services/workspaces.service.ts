@@ -4,8 +4,9 @@ export interface Workspace {
   id: number;
   name: string;
   description: string;
-  created_at: string;
   is_favorite: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getWorkspacesService(): Promise<Workspace[]> {
@@ -24,7 +25,7 @@ export async function createWorkspaceService(name: string, description: string):
 export async function updateWorkspaceService(id: number, name: string, description: string): Promise<void> {
   const db = await dbPromise;
   await db.execute(
-    "UPDATE workspaces SET name = $1, description = $2 WHERE id = $3",
+    "UPDATE workspaces SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
     [name, description, id]
   )
 }
@@ -37,7 +38,7 @@ export async function deleteWorkspaceService(id: number): Promise<void> {
 export async function toggleFavoriteService(id: number, isFavorite: boolean) {
   const db = await dbPromise;
   await db.execute(
-    "UPDATE workspaces SET is_favorite = $1 WHERE id = $2",
+    "UPDATE workspaces SET is_favorite = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
     [isFavorite ? 1 : 0, id]
   )
 }

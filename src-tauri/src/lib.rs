@@ -25,6 +25,12 @@ pub fn run() {
             sql: include_str!("../migrations/02_add_notes_table.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "add triggers to update workspace updated_at on note or shortcut changes",
+            sql: include_str!("../migrations/03_add_workspace_triggers.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let (tx, _rx) = broadcast::channel::<String>(10);
