@@ -12,7 +12,7 @@
 			<!-- Live Date & Clock Display -->
 			<div class="flex flex-col items-end shrink-0 select-none bg-neutral-100 dark:bg-neutral-900/80 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800">
 				<div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-mono font-bold text-lg">
-					<UIcon name="i-ph-clock-bold" class="size-5" />
+					<UIcon name="i-lucide-clock" class="size-5" />
 					<span>{{ currentTimeString }}</span>
 				</div>
 				<span class="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
@@ -26,7 +26,7 @@
 			<div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-xs">
 				<div class="flex items-center justify-between">
 					<span class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Workspaces</span>
-					<UIcon name="i-ph-folders-bold" class="size-5 text-blue-500" />
+					<UIcon name="i-lucide-folder" class="size-5 text-blue-500" />
 				</div>
 				<p class="text-3xl font-bold text-neutral-900 dark:text-white mt-4 font-mono">
 					{{ workspaceStore.workspaces.length }}
@@ -36,7 +36,7 @@
 			<div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-xs">
 				<div class="flex items-center justify-between">
 					<span class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Total Active Tasks</span>
-					<UIcon name="i-ph-kanban-bold" class="size-5 text-amber-500" />
+					<UIcon name="i-lucide-kanban" class="size-5 text-amber-500" />
 				</div>
 				<p class="text-3xl font-bold text-neutral-900 dark:text-white mt-4 font-mono">
 					{{ activeTasksCount }}
@@ -46,7 +46,7 @@
 			<div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-xs">
 				<div class="flex items-center justify-between">
 					<span class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Upcoming Deadlines</span>
-					<UIcon name="i-ph-clock-afternoon-bold" class="size-5 text-emerald-500" />
+					<UIcon name="i-lucide-history" class="size-5 text-emerald-500" />
 				</div>
 				<p class="text-3xl font-bold text-neutral-900 dark:text-white mt-4 font-mono">
 					{{ upcomingDeadlinesCount }}
@@ -76,8 +76,8 @@
 							</h3>
 							<UIcon
 								v-if="ws.is_favorite"
-								name="i-ph-star-fill"
-								class="size-4 text-amber-400 shrink-0"
+								name="i-lucide-star"
+								class="size-4 text-amber-400 fill-amber-400 shrink-0"
 							/>
 						</div>
 
@@ -88,7 +88,7 @@
 
 					<div class="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-900 text-xs text-neutral-400">
 						<span>Updated {{ formatDate(ws.updated_at) }}</span>
-						<UIcon name="i-ph-arrow-right-bold" class="size-4 text-blue-500" />
+						<UIcon name="i-lucide-arrow-right" class="size-4 text-blue-500" />
 					</div>
 				</div>
 			</div>

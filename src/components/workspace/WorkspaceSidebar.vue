@@ -35,7 +35,7 @@
 					"
 				>
 					<UIcon
-						name="i-ph-squares-four-bold"
+						name="i-lucide-layout-dashboard"
 						class="size-4 text-blue-400"
 					/>
 					<span>Dashboard</span>
@@ -52,7 +52,7 @@
 					"
 				>
 					<UIcon
-						name="i-ph-kanban-bold"
+						name="i-lucide-kanban"
 						class="size-4 text-amber-400"
 					/>
 					<span>All Tasks</span>
@@ -69,7 +69,7 @@
 					"
 				>
 					<UIcon
-						name="i-ph-clock-afternoon-bold"
+						name="i-lucide-history"
 						class="size-4 text-emerald-400"
 					/>
 					<span>All Timeline</span>
@@ -83,7 +83,7 @@
 						>Workspaces</span
 					>
 					<UButton
-						icon="i-ph-plus-bold"
+						icon="i-lucide-plus"
 						color="neutral"
 						variant="ghost"
 						size="xs"

@@ -3,7 +3,7 @@
 		<div v-if="currentWorkspace" class="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
 			<div class="flex items-center gap-3">
 				<div class="p-2.5 rounded-xl bg-blue-600/10 text-blue-500 border border-blue-500/20">
-					<UIcon name="i-ph-folder-open-bold" class="size-6" />
+					<UIcon name="i-lucide-folder-open" class="size-6" />
 				</div>
 				<div>
 					<h1 class="text-xl font-bold text-neutral-900 dark:text-white">
@@ -67,10 +67,10 @@ const currentWorkspace = computed(() => {
 });
 
 const tabItems: TabsItem[] = [
-	{ label: "Tasks", icon: "i-ph-clipboard-text-bold", slot: "tasks" },
-	{ label: "Timeline", icon: "i-ph-clock-afternoon-bold", slot: "timeline" },
-	{ label: "Shortcuts", icon: "i-ph-link-bold", slot: "shortcuts" },
-	{ label: "Notes", icon: "i-ph-note-pencil-bold", slot: "notes" },
+	{ label: "Tasks", icon: "i-lucide-kanban", slot: "tasks" },
+	{ label: "Timeline", icon: "i-lucide-history", slot: "timeline" },
+	{ label: "Shortcuts", icon: "i-lucide-link", slot: "shortcuts" },
+	{ label: "Notes", icon: "i-lucide-notebook-pen", slot: "notes" },
 ];
 
 watch(

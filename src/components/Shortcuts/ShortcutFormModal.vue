@@ -44,7 +44,7 @@
 						/>
 						<UButton
 							v-if="formType !== 'web'"
-							icon="i-ph-folder-open-bold"
+							icon="i-lucide-folder-open"
 							color="neutral"
 							variant="soft"
 							size="md"
@@ -58,7 +58,7 @@
 		</template>
 
 		<template #footer="{ close }">
-			<div class="flex justify-end gap-3">
+			<div class="flex w-full justify-end gap-3">
 				<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
 				<UButton type="submit" form="shortcut-form" color="primary">
 					{{ editingShortcut ? 'Save Changes' : 'Create Shortcut' }}

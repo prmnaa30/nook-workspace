@@ -22,7 +22,7 @@
 				v-model:sort-order="sortOrder"
 				:sort-options="sortOptions"
 				action-label="New Note"
-				action-icon="i-ph-plus-bold"
+				action-icon="i-lucide-plus"
 				@action="openFormModal()"
 			/>
 
@@ -32,7 +32,7 @@
 					v-if="filteredNotes.length === 0"
 					class="h-48 flex flex-col items-center justify-center border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-400 dark:text-neutral-500"
 				>
-					<UIcon name="i-ph-note-pencil" class="size-8 mb-2 opacity-50" />
+					<UIcon name="i-lucide-notebook-pen" class="size-8 mb-2 opacity-50" />
 					<p class="text-sm">No notes created yet.</p>
 				</div>
 
@@ -43,6 +43,7 @@
 						:note="note"
 						@open="openNoteEditor(note)"
 						@edit="openFormModal(note)"
+						@move="triggerMoveNote(note)"
 						@delete="triggerDeleteNote(note)"
 					/>
 				</div>
@@ -53,6 +54,20 @@
 				ref="formModalRef"
 				:workspace-id="workspaceId"
 				@saved="refreshNotes"
+			/>
+
+			<!-- Move Note Modal -->
+			<MoveModal
+				ref="moveModalRef"
+				item-type="Note"
+				@confirm="handleConfirmMove"
+			/>
+
+			<!-- Missing Note Modal -->
+			<NoteMissingModal
+				ref="missingModalRef"
+				@recreate="handleRecreateNote"
+				@delete="handleDeleteMissingNote"
 			/>
 
 			<!-- Delete Note Modal -->
@@ -68,6 +83,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import { useStorage } from "@vueuse/core";
 import type { Note } from "../../services/notes.service";
 import { useNoteStore } from "../../stores/notes";
 import { useWorkspaceStore } from "../../stores/workspaces";
@@ -75,7 +91,9 @@ import WorkspaceSubHeader from "../workspace/WorkspaceSubHeader.vue";
 import NoteCard from "./NoteCard.vue";
 import NoteEditor from "./NoteEditor.vue";
 import NoteFormModal from "./NoteFormModal.vue";
+import NoteMissingModal from "./NoteMissingModal.vue";
 import DeleteModal from "../common/DeleteModal.vue";
+import MoveModal from "../common/MoveModal.vue";
 
 const props = defineProps<{
 	workspaceId: number;
@@ -86,8 +104,8 @@ const workspaceStore = useWorkspaceStore();
 
 const activeNote = ref<Note | null>(null);
 const searchQuery = ref("");
-const sortKey = ref("title");
-const sortOrder = ref<"asc" | "desc">("asc");
+const sortKey = useStorage("nook_notes_sort_key", "title");
+const sortOrder = useStorage<"asc" | "desc">("nook_notes_sort_order", "asc");
 
 const currentWorkspace = computed(() => {
 	return workspaceStore.workspaces.find((w) => w.id === props.workspaceId) || null;
@@ -147,17 +165,51 @@ function refreshNotes() {
 	noteStore.getNotes(props.workspaceId);
 }
 
-function openNoteEditor(note: Note) {
+async function openNoteEditor(note: Note) {
+	const exists = await noteStore.checkNoteFileExists(props.workspaceId, note.filename);
+	if (!exists) {
+		missingModalRef.value?.openModal(note);
+		return;
+	}
 	activeNote.value = note;
 	noteStore.activeNote = note;
 }
 
 const formModalRef = ref<any>(null);
+const moveModalRef = ref<any>(null);
+const missingModalRef = ref<any>(null);
 const deleteModalRef = ref<any>(null);
+const noteToMove = ref<Note | null>(null);
 const noteToDelete = ref<Note | null>(null);
 
 function openFormModal(note?: Note) {
 	formModalRef.value?.openModal(note);
+}
+
+function triggerMoveNote(note: Note) {
+	noteToMove.value = note;
+	moveModalRef.value?.openModal(note.title, props.workspaceId);
+}
+
+async function handleConfirmMove(targetWorkspaceId: number) {
+	if (noteToMove.value) {
+		await noteStore.moveNote(props.workspaceId, targetWorkspaceId, noteToMove.value.id, noteToMove.value.filename);
+		noteToMove.value = null;
+	}
+}
+
+async function handleRecreateNote(note: Note) {
+	await noteStore.recreateNoteFile(props.workspaceId, note.filename, note.title);
+	activeNote.value = note;
+	noteStore.activeNote = note;
+}
+
+async function handleDeleteMissingNote(note: Note) {
+	await noteStore.deleteNote(props.workspaceId, note.id, note.filename);
+	if (activeNote.value?.id === note.id) {
+		activeNote.value = null;
+		noteStore.activeNote = null;
+	}
 }
 
 function triggerDeleteNote(note: Note) {
@@ -177,10 +229,10 @@ async function handleConfirmDelete() {
 }
 
 defineExpose({
-	openNoteById: (noteId: number) => {
+	openNoteById: async (noteId: number) => {
 		const note = workspaceNotes.value.find((n: Note) => n.id === noteId);
 		if (note) {
-			openNoteEditor(note);
+			await openNoteEditor(note);
 		}
 	},
 });

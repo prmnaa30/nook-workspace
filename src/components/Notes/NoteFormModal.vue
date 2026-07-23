@@ -21,7 +21,7 @@
 		</template>
 
 		<template #footer="{ close }">
-			<div class="flex justify-end gap-3">
+			<div class="flex w-full justify-end gap-3">
 				<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
 				<UButton type="submit" form="note-form" color="primary">
 					{{ editingNote ? 'Save Changes' : 'Create Note' }}

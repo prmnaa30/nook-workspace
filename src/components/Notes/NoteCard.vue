@@ -8,7 +8,7 @@
 				<div class="flex items-start justify-between gap-3 mb-2">
 					<div class="flex items-center gap-2.5 truncate">
 						<div class="p-2 rounded-lg bg-amber-500/10 shrink-0">
-							<UIcon name="i-ph-note-bold" class="size-5 text-amber-500" />
+							<UIcon name="i-lucide-file-text" class="size-5 text-amber-500" />
 						</div>
 						<span class="font-bold text-sm text-neutral-900 dark:text-white truncate">
 							{{ note.title }}
@@ -20,7 +20,7 @@
 							color="neutral"
 							variant="ghost"
 							size="xs"
-							icon="i-ph-dots-three-vertical"
+							icon="i-lucide-more-vertical"
 							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
 							@click.stop
 						/>
@@ -36,7 +36,7 @@
 				<span class="font-mono text-[11px] truncate max-w-[150px]">{{ note.filename }}</span>
 				<div class="flex items-center gap-1 text-amber-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
 					<span>Open Editor</span>
-					<UIcon name="i-ph-arrow-right-bold" class="size-3.5" />
+					<UIcon name="i-lucide-arrow-right" class="size-3.5" />
 				</div>
 			</div>
 		</div>
@@ -55,6 +55,7 @@ defineProps<{
 const emit = defineEmits<{
 	(e: "open"): void;
 	(e: "edit"): void;
+	(e: "move"): void;
 	(e: "delete"): void;
 }>();
 
@@ -62,20 +63,25 @@ const menuItems = computed<DropdownMenuItem[][]>(() => [
 	[
 		{
 			label: "Open Note",
-			icon: "i-ph-book-open-bold",
+			icon: "i-lucide-book-open",
 			onSelect: () => emit("open"),
 		},
 		{
 			label: "Rename Note",
-			icon: "i-ph-pencil",
+			icon: "i-lucide-pencil",
 			onSelect: () => emit("edit"),
+		},
+		{
+			label: "Move to Workspace...",
+			icon: "i-lucide-folder-output",
+			onSelect: () => emit("move"),
 		},
 		{
 			type: "separator" as const,
 		},
 		{
 			label: "Delete Note",
-			icon: "i-ph-trash",
+			icon: "i-lucide-trash-2",
 			color: "error" as const,
 			onSelect: () => emit("delete"),
 		},

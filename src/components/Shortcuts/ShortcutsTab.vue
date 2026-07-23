@@ -11,7 +11,7 @@
 			v-model:sort-order="sortOrder"
 			:sort-options="sortOptions"
 			action-label="Add Shortcut"
-			action-icon="i-ph-plus-bold"
+			action-icon="i-lucide-plus"
 			@action="openFormModal()"
 		/>
 
@@ -21,7 +21,7 @@
 				v-if="filteredShortcuts.length === 0"
 				class="h-48 flex flex-col items-center justify-center border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-400 dark:text-neutral-500"
 			>
-				<UIcon name="i-ph-link" class="size-8 mb-2 opacity-50" />
+				<UIcon name="i-lucide-link" class="size-8 mb-2 opacity-50" />
 				<p class="text-sm">No shortcuts added yet.</p>
 			</div>
 
@@ -31,6 +31,7 @@
 					:key="shortcut.id"
 					:shortcut="shortcut"
 					@edit="openFormModal(shortcut)"
+					@move="triggerMoveShortcut(shortcut)"
 					@delete="triggerDeleteShortcut(shortcut)"
 				/>
 			</div>
@@ -41,6 +42,13 @@
 			ref="formModalRef"
 			:workspace-id="workspaceId"
 			@saved="refreshShortcuts"
+		/>
+
+		<!-- Move Shortcut Modal -->
+		<MoveModal
+			ref="moveModalRef"
+			item-type="Shortcut"
+			@confirm="handleConfirmMove"
 		/>
 
 		<!-- Delete Shortcut Modal -->
@@ -55,12 +63,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import { useStorage } from "@vueuse/core";
 import type { Shortcut } from "../../services/shortcuts.service";
 import { useShortcutStore } from "../../stores/shortcuts";
 import WorkspaceSubHeader from "../workspace/WorkspaceSubHeader.vue";
 import ShortcutCard from "./ShortcutCard.vue";
 import ShortcutFormModal from "./ShortcutFormModal.vue";
 import DeleteModal from "../common/DeleteModal.vue";
+import MoveModal from "../common/MoveModal.vue";
 
 const props = defineProps<{
 	workspaceId: number;
@@ -69,8 +79,8 @@ const props = defineProps<{
 const shortcutStore = useShortcutStore();
 
 const searchQuery = ref("");
-const sortKey = ref("title");
-const sortOrder = ref<"asc" | "desc">("asc");
+const sortKey = useStorage("nook_shortcuts_sort_key", "title");
+const sortOrder = useStorage<"asc" | "desc">("nook_shortcuts_sort_order", "asc");
 
 const sortOptions = [
 	{ label: "Title", value: "title" },
@@ -124,11 +134,25 @@ function refreshShortcuts() {
 }
 
 const formModalRef = ref<any>(null);
+const moveModalRef = ref<any>(null);
 const deleteModalRef = ref<any>(null);
+const shortcutToMove = ref<Shortcut | null>(null);
 const shortcutToDelete = ref<Shortcut | null>(null);
 
 function openFormModal(shortcut?: Shortcut) {
 	formModalRef.value?.openModal(shortcut);
+}
+
+function triggerMoveShortcut(shortcut: Shortcut) {
+	shortcutToMove.value = shortcut;
+	moveModalRef.value?.openModal(shortcut.title, props.workspaceId);
+}
+
+async function handleConfirmMove(targetWorkspaceId: number) {
+	if (shortcutToMove.value) {
+		await shortcutStore.moveShortcut(shortcutToMove.value.id, targetWorkspaceId);
+		shortcutToMove.value = null;
+	}
 }
 
 function triggerDeleteShortcut(shortcut: Shortcut) {

@@ -3,6 +3,7 @@
 		v-model:open="isOpen"
 		:title="`Delete ${deleteType}`"
 		close-icon="i-lucide-x"
+		:ui="{ content: 'z-[60]', overlay: 'z-[55]' }"
 	>
 		<template #body>
 			<p class="text-sm text-neutral-600 dark:text-neutral-400">
@@ -12,7 +13,7 @@
 		</template>
 
 		<template #footer="{ close }">
-			<div class="flex justify-end gap-3">
+			<div class="flex w-full justify-end gap-3">
 				<UButton
 					variant="soft"
 					color="neutral"
@@ -21,7 +22,7 @@
 					Cancel
 				</UButton>
 				<UButton
-					color="error"
+					class="bg-red-500 hover:bg-red-600"
 					@click="confirmDelete"
 				>
 					Delete

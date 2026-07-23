@@ -1,5 +1,7 @@
 <template>
-	<div class="flex items-center justify-between gap-4 py-2 px-1 mb-3 shrink-0 border-b border-neutral-200/60 dark:border-neutral-800/60 select-none">
+	<div
+		class="flex items-center justify-between gap-4 py-2 px-1 mb-3 shrink-0 border-b border-neutral-200/60 dark:border-neutral-800/60 select-none"
+	>
 		<div class="flex items-center gap-2.5 min-w-0">
 			<h2 class="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate">
 				{{ title }}
@@ -12,10 +14,13 @@
 				size="sm"
 				class="font-mono font-medium shrink-0"
 			>
-				{{ itemCount }} {{ itemUnit || 'items' }}
+				{{ itemCount }} {{ itemUnit || "items" }}
 			</UBadge>
 
-			<p v-if="description" class="hidden lg:block text-xs text-neutral-400 dark:text-neutral-500 truncate ml-2">
+			<p
+				v-if="description"
+				class="hidden lg:block text-xs text-neutral-400 dark:text-neutral-500 truncate ml-2"
+			>
 				{{ description }}
 			</p>
 		</div>
@@ -23,24 +28,30 @@
 		<div class="flex items-center gap-2 shrink-0">
 			<slot name="extra-actions"></slot>
 
-			<div v-if="searchQuery !== undefined" class="relative flex items-center">
+			<div
+				v-if="searchQuery !== undefined"
+				class="relative flex items-center"
+			>
 				<UInput
 					v-model="searchQuery"
 					type="text"
-					icon="i-ph-magnifying-glass"
+					icon="i-lucide-search"
 					:placeholder="searchPlaceholder || 'Search...'"
 					color="neutral"
 					variant="outline"
 					size="sm"
 					class="w-36 sm:w-48 font-medium"
 				>
-					<template v-if="searchQuery" #trailing>
+					<template
+						v-if="searchQuery"
+						#trailing
+					>
 						<UButton
 							v-if="searchQuery"
 							color="neutral"
 							variant="link"
 							size="xs"
-							icon="i-ph-x"
+							icon="i-lucide-x"
 							class="p-0.5 cursor-pointer"
 							title="Clear Search"
 							@click="searchQuery = ''"
@@ -58,7 +69,7 @@
 					color="neutral"
 					variant="outline"
 					size="sm"
-					icon="i-ph-arrows-down-up"
+					icon="i-lucide-arrow-up-down"
 					class="cursor-pointer font-medium"
 					title="Sort Items"
 				>
@@ -68,7 +79,7 @@
 
 			<UButton
 				v-if="actionLabel"
-				:icon="actionIcon || 'i-ph-plus-bold'"
+				:icon="actionIcon || 'i-lucide-plus'"
 				color="primary"
 				size="sm"
 				class="cursor-pointer font-medium shrink-0"
@@ -127,11 +138,14 @@ const dropdownSortItems = computed<DropdownMenuItem[][]>(() => {
 				label: opt.label,
 				icon: isActive
 					? sortOrder.value === "asc"
-						? "i-ph-arrow-up-bold"
-						: "i-ph-arrow-down-bold"
-					: "i-ph-minus",
+						? "i-lucide-arrow-up"
+						: "i-lucide-arrow-down"
+					: "i-lucide-minus",
 				onSelect: () => handleSortSelect(opt.value),
-				class: isActive ? "text-blue-500 font-bold" : "",
+				ui: {
+					item: isActive ? "text-primary" : "text-primary/60",
+					itemLeadingIcon: isActive ? "text-primary" : "",
+				} as any,
 			};
 		}),
 	];

@@ -23,7 +23,7 @@
 							color="neutral"
 							variant="ghost"
 							size="xs"
-							icon="i-ph-dots-three-vertical"
+							icon="i-lucide-more-vertical"
 							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
 							@click.stop
 						/>
@@ -39,7 +39,7 @@
 				<span class="capitalize">{{ shortcut.type }}</span>
 				<div class="flex items-center gap-1 text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
 					<span>Run</span>
-					<UIcon name="i-ph-arrow-up-right-bold" class="size-3.5" />
+					<UIcon name="i-lucide-arrow-up-right" class="size-3.5" />
 				</div>
 			</div>
 		</div>
@@ -58,6 +58,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: "edit"): void;
+	(e: "move"): void;
 	(e: "delete"): void;
 }>();
 
@@ -65,19 +66,19 @@ const typeStyle = computed(() => {
 	switch (props.shortcut.type) {
 		case "web":
 			return {
-				icon: "i-ph-globe-bold",
+				icon: "i-lucide-globe",
 				iconColor: "text-blue-500",
 				badgeBg: "bg-blue-500/10",
 			};
 		case "folder":
 			return {
-				icon: "i-ph-folder-bold",
+				icon: "i-lucide-folder",
 				iconColor: "text-amber-500",
 				badgeBg: "bg-amber-500/10",
 			};
 		default:
 			return {
-				icon: "i-ph-file-bold",
+				icon: "i-lucide-file",
 				iconColor: "text-indigo-500",
 				badgeBg: "bg-indigo-500/10",
 			};
@@ -100,20 +101,25 @@ const menuItems = computed<DropdownMenuItem[][]>(() => [
 	[
 		{
 			label: "Run Shortcut",
-			icon: "i-ph-play-bold",
+			icon: "i-lucide-play",
 			onSelect: () => execute(),
 		},
 		{
 			label: "Edit Shortcut",
-			icon: "i-ph-pencil",
+			icon: "i-lucide-pencil",
 			onSelect: () => emit("edit"),
+		},
+		{
+			label: "Move to Workspace...",
+			icon: "i-lucide-folder-output",
+			onSelect: () => emit("move"),
 		},
 		{
 			type: "separator" as const,
 		},
 		{
 			label: "Delete Shortcut",
-			icon: "i-ph-trash",
+			icon: "i-lucide-trash-2",
 			color: "error" as const,
 			onSelect: () => emit("delete"),
 		},
