@@ -1,98 +1,45 @@
 <template>
-	<UContextMenu
-		v-model:open="contextMenuOpen"
-		:items="shortcutContextMenuItems"
-		:ui="{
-			content: 'min-w-52',
-		}"
-	>
+	<UContextMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
 		<div
-			@click="emit('click', props.shortcut)"
-			class="workspace-card shortcut-card group bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700 rounded-xl overflow-hidden flex flex-col z-10 cursor-pointer transition-all shadow-md hover:shadow-lg duration-200"
-			:class="[contextMenuOpen ? 'menu-active bg-slate-900 border-slate-700' : '']"
+			class="group relative flex flex-col justify-between p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all cursor-pointer shadow-xs min-h-[120px]"
+			@click="execute"
 		>
-			<div
-				class="h-14 w-full relative transition-all duration-200"
-				:class="{
-					'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-b border-blue-500/10':
-						props.shortcut.type === 'web',
-					'bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border-b border-emerald-500/10':
-						props.shortcut.type === 'folder',
-					'bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-b border-amber-500/10':
-						props.shortcut.type === 'file',
-				}"
-			>
-				<button
-					@click.stop="emit('delete', props.shortcut)"
-					class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all border border-slate-800/60"
-					title="Delete Shortcut"
-				>
-					<UIcon
-						name="i-lucide-trash"
-						size="14"
-					/>
-				</button>
+			<div>
+				<div class="flex items-start justify-between gap-3 mb-2">
+					<div class="flex items-center gap-2.5 truncate">
+						<div
+							class="p-2 rounded-lg shrink-0"
+							:class="typeStyle.badgeBg"
+						>
+							<UIcon :name="typeStyle.icon" class="size-5" :class="typeStyle.iconColor" />
+						</div>
+						<span class="font-bold text-sm text-neutral-900 dark:text-white truncate">
+							{{ shortcut.title }}
+						</span>
+					</div>
 
-				<button
-					@click.stop="emit('edit', props.shortcut)"
-					class="absolute top-2 right-10 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-md transition-all border border-slate-800/60"
-					title="Edit Shortcut"
-				>
-					<UIcon
-						name="i-lucide-pencil"
-						size="14"
-					/>
-				</button>
-			</div>
-
-			<div
-				class="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800/80 flex items-center justify-center -mt-4 ml-4 relative z-10 shadow-md"
-			>
-				<span
-					v-if="props.shortcut.type === 'web'"
-					class="text-lg"
-					>🌐</span
-				>
-				<span
-					v-else-if="props.shortcut.type === 'folder'"
-					class="text-lg"
-					>📁</span
-				>
-				<span
-					v-else
-					class="text-lg"
-					>📄</span
-				>
-			</div>
-
-			<div class="p-4 pt-2.5 flex flex-col gap-2">
-				<div class="flex flex-col gap-1">
-					<h4
-						class="font-semibold text-slate-200 text-sm tracking-wide truncate"
-						:title="props.shortcut.title"
-					>
-						{{ props.shortcut.title }}
-					</h4>
+					<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+						<UButton
+							color="neutral"
+							variant="ghost"
+							size="xs"
+							icon="i-ph-dots-three-vertical"
+							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+							@click.stop
+						/>
+					</UDropdownMenu>
 				</div>
 
-				<div
-					class="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1 bg-slate-950/40 p-2 rounded border border-slate-800/40 truncate w-full"
-					:title="props.shortcut.path"
-				>
-					<svg
-						class="w-3 h-3 text-slate-500 flex-shrink-0"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-						/>
-					</svg>
-					<span class="truncate">{{ props.shortcut.path }}</span>
+				<p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate mt-1">
+					{{ shortcut.path }}
+				</p>
+			</div>
+
+			<div class="flex items-center justify-between mt-4 pt-2 border-t border-neutral-100 dark:border-neutral-900 text-xs text-neutral-400">
+				<span class="capitalize">{{ shortcut.type }}</span>
+				<div class="flex items-center gap-1 text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+					<span>Run</span>
+					<UIcon name="i-ph-arrow-up-right-bold" class="size-3.5" />
 				</div>
 			</div>
 		</div>
@@ -100,60 +47,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from "vue";
-import type { ContextMenuItem } from "@nuxt/ui";
+import { computed } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 import type { Shortcut } from "../../services/shortcuts.service";
+import { invoke } from "@tauri-apps/api/core";
 
 const props = defineProps<{
 	shortcut: Shortcut;
 }>();
 
 const emit = defineEmits<{
-	(e: "click", shortcut: Shortcut): void;
-	(e: "edit", shortcut: Shortcut): void;
-	(e: "delete", shortcut: Shortcut): void;
+	(e: "edit"): void;
+	(e: "delete"): void;
 }>();
 
-const contextMenuOpen = ref(false);
-
-watch(contextMenuOpen, (isOpen) => {
-	if (isOpen) {
-		document.body.classList.add("menu-is-open");
-	} else {
-		document.body.classList.remove("menu-is-open");
+const typeStyle = computed(() => {
+	switch (props.shortcut.type) {
+		case "web":
+			return {
+				icon: "i-ph-globe-bold",
+				iconColor: "text-blue-500",
+				badgeBg: "bg-blue-500/10",
+			};
+		case "folder":
+			return {
+				icon: "i-ph-folder-bold",
+				iconColor: "text-amber-500",
+				badgeBg: "bg-amber-500/10",
+			};
+		default:
+			return {
+				icon: "i-ph-file-bold",
+				iconColor: "text-indigo-500",
+				badgeBg: "bg-indigo-500/10",
+			};
 	}
 });
 
-onUnmounted(() => {
-	document.body.classList.remove("menu-is-open");
-});
+async function execute() {
+	try {
+		await invoke("execute_shortcut", {
+			path: props.shortcut.path,
+			shortcutType: props.shortcut.type,
+			browser: props.shortcut.browser_path || null,
+		});
+	} catch (error) {
+		console.error("Failed to execute shortcut:", error);
+	}
+}
 
-const shortcutContextMenuItems: ContextMenuItem[][] = [
+const menuItems = computed<DropdownMenuItem[][]>(() => [
 	[
 		{
-			label:
-				props.shortcut.type === "web"
-					? "Open URL"
-					: props.shortcut.type === "folder"
-						? "Open Folder"
-						: "Open File",
-			icon: "i-lucide-external-link",
-			onSelect: () => emit("click", props.shortcut),
+			label: "Run Shortcut",
+			icon: "i-ph-play-bold",
+			onSelect: () => execute(),
 		},
 		{
 			label: "Edit Shortcut",
-			icon: "i-lucide-pencil",
-			onSelect: () => emit("edit", props.shortcut),
+			icon: "i-ph-pencil",
+			onSelect: () => emit("edit"),
 		},
 		{
-			type: "separator",
+			type: "separator" as const,
 		},
 		{
 			label: "Delete Shortcut",
-			icon: "i-lucide-trash",
+			icon: "i-ph-trash",
 			color: "error" as const,
-			onSelect: () => emit("delete", props.shortcut),
+			onSelect: () => emit("delete"),
 		},
 	],
-];
+]);
 </script>

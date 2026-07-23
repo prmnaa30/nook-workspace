@@ -1,76 +1,67 @@
 <template>
 	<UModal
 		v-model:open="isOpen"
+		:title="editingShortcut ? 'Edit Shortcut' : 'Add Shortcut'"
 		close-icon="i-lucide-x"
-		:title="initialValue ? 'Edit Shortcut' : 'Add New Shortcut'"
-		:ui="{
-			title: 'text-text font-medium',
-			footer: 'self-end',
-		}"
 	>
-
 		<template #body>
-			<div class="flex flex-col gap-3">
-				<form
-					@submit.prevent="submitShortcut"
-					class="flex flex-col gap-3"
-					id="add-shortcut"
-				>
-					<div class="flex gap-2">
-						<input
-							v-model="formData.title"
-							type="text"
-							placeholder="Shortcut Title (e.g., Figma Design)"
-							required
-							class="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-slate-100 focus:ring-1 focus:ring-slate-100 focus:outline-none text-text placeholder-text-muted transition-colors"
-						/>
-						<USelectMenu
-							v-model="formData.type"
-							value-key="id"
-							:items="shortcutType"
-							placeholder="Select type"
-							class="w-38"
-						/>
-					</div>
+			<form id="shortcut-form" @submit.prevent="saveShortcut" class="flex flex-col gap-4">
+				<div class="flex flex-col gap-1">
+					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Title *</label>
+					<UInput
+						v-model="formTitle"
+						placeholder="Shortcut title (e.g. GitHub Repository)"
+						required
+						color="neutral"
+						variant="outline"
+						size="md"
+					/>
+				</div>
 
-					<div class="flex gap-2">
-						<input
-							v-model="formData.path"
-							type="text"
-							placeholder="Target Path (e.g., https://figma.com/file/... atau C:\Projects)"
-							required
-							class="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:border-slate-100 focus:ring-1 focus:ring-slate-100 focus:outline-none text-text placeholder-text-muted font-mono transition-colors"
-						/>
+				<div class="flex flex-col gap-1">
+					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Type *</label>
+					<USelect
+						v-model="formType"
+						:items="typeOptions"
+						color="neutral"
+						variant="outline"
+						size="md"
+						class="w-full"
+					/>
+				</div>
 
+				<div class="flex flex-col gap-1">
+					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Path or URL *</label>
+					<div class="flex gap-2">
+						<UInput
+							v-model="formPath"
+							placeholder="https://example.com or C:\Folder\App.exe"
+							required
+							color="neutral"
+							variant="outline"
+							size="md"
+							class="w-full"
+						/>
 						<UButton
-							v-if="formData.type !== 'web'"
+							v-if="formType !== 'web'"
+							icon="i-ph-folder-open-bold"
+							color="neutral"
 							variant="soft"
+							size="md"
+							title="Browse File or Folder"
+							class="cursor-pointer shrink-0"
 							@click="browsePath"
-							class="px-4 py-2 bg-transparent hover:bg-surface-hover border border-border rounded-md text-text-secondary hover:text-text text-sm transition-colors whitespace-nowrap cursor-pointer"
-						>
-							🔍 Browse
-						</UButton>
+						/>
 					</div>
-				</form>
-			</div>
+				</div>
+			</form>
 		</template>
 
 		<template #footer="{ close }">
-			<div class="flex gap-3">
-				<UButton
-					variant="soft"
-					@click="close"
-					class="px-4 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded-md text-text-secondary hover:text-text text-sm transition-colors whitespace-nowrap cursor-pointer"
-				>
-					Cancel
-				</UButton>
-
-				<UButton
-					type="submit"
-					form="add-shortcut"
-					class="px-4 py-1.5 bg-text text-background hover:opacity-90 text-sm font-medium rounded-md transition-all cursor-pointer"
-				>
-					{{ initialValue ? "Update Shortcut" : "Save Shortcut" }}
+			<div class="flex justify-end gap-3">
+				<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
+				<UButton type="submit" form="shortcut-form" color="primary">
+					{{ editingShortcut ? 'Save Changes' : 'Create Shortcut' }}
 				</UButton>
 			</div>
 		</template>
@@ -78,122 +69,87 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { Workspace } from "../../services/workspaces.service";
-import { open } from "@tauri-apps/plugin-dialog";
-import { SelectMenuItem } from "@nuxt/ui";
-import { useShortcutStore } from "../../stores/shortcuts";
+import { ref } from "vue";
 import type { Shortcut } from "../../services/shortcuts.service";
-
-const store = useShortcutStore();
+import { useShortcutStore } from "../../stores/shortcuts";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 const props = defineProps<{
-	workspace: Workspace;
-	initialValue?: Shortcut;
+	workspaceId: number;
 }>();
 
+const emit = defineEmits<{
+	(e: "saved"): void;
+}>();
+
+const shortcutStore = useShortcutStore();
+
 const isOpen = ref(false);
-watch(isOpen, (newValue) => {
-	if (newValue) {
-		if (props.initialValue) {
-			formData.value = {
-				title: props.initialValue.title,
-				type: props.initialValue.type,
-				path: props.initialValue.path,
-				browser_path: props.initialValue.browser_path || "",
-			};
-		} else {
-			resetForm();
-		}
+const editingShortcut = ref<Shortcut | null>(null);
+const formTitle = ref("");
+const formType = ref<"web" | "file" | "folder">("web");
+const formPath = ref("");
+
+const typeOptions = [
+	{ label: "Web URL", value: "web" },
+	{ label: "File Executable", value: "file" },
+	{ label: "Folder Directory", value: "folder" },
+];
+
+function openModal(shortcut?: Shortcut) {
+	if (shortcut) {
+		editingShortcut.value = shortcut;
+		formTitle.value = shortcut.title;
+		formType.value = shortcut.type;
+		formPath.value = shortcut.path;
 	} else {
-		setTimeout(() => resetForm(), 300);
+		editingShortcut.value = null;
+		formTitle.value = "";
+		formType.value = "web";
+		formPath.value = "";
 	}
-});
-
-const formData = ref<{
-	title: string;
-	type: "web" | "folder" | "file";
-	path: string;
-	browser_path: string;
-}>({
-	title: "",
-	type: "web",
-	path: "",
-	browser_path: "",
-});
-
-const shortcutType = ref<SelectMenuItem[]>([
-	{
-		label: "🌐 Web URL",
-		id: "web",
-	},
-	{
-		label: "📁 Folder",
-		id: "folder",
-	},
-	{
-		label: "📄 File",
-		id: "file",
-	},
-]);
-
-async function submitShortcut() {
-	if (!props.workspace || !formData.value.title || !formData.value.path) return;
-
-	const browserPath =
-		formData.value.type === "web" && formData.value.browser_path
-			? formData.value.browser_path
-			: null;
-
-	if (props.initialValue) {
-		await store.updateShortcut(
-			props.workspace.id,
-			props.initialValue.id,
-			formData.value.title,
-			formData.value.type,
-			formData.value.path,
-			browserPath,
-		);
-	} else {
-		await store.createShortcut(
-			props.workspace.id,
-			formData.value.title,
-			formData.value.type,
-			formData.value.path,
-			browserPath,
-		);
-	}
-
-	isOpen.value = false;
-}
-
-async function browsePath() {
-	if (formData.value.type === "web") return;
-
-	const selectedPath = await open({
-		directory: formData.value.type === "folder",
-		multiple: false,
-	});
-
-	if (selectedPath) {
-		formData.value.path = selectedPath as string;
-	}
-}
-
-function resetForm() {
-	formData.value = {
-		title: "",
-		type: "web",
-		path: "",
-		browser_path: "",
-	};
-}
-
-function openModal() {
 	isOpen.value = true;
 }
 
-defineExpose({
-	openModal,
-});
+async function browsePath() {
+	try {
+		const selected = await openDialog({
+			directory: formType.value === "folder",
+			multiple: false,
+		});
+		if (selected && typeof selected === "string") {
+			formPath.value = selected;
+		}
+	} catch (e) {
+		console.error("Failed to browse path:", e);
+	}
+}
+
+async function saveShortcut() {
+	if (!formTitle.value.trim() || !formPath.value.trim()) return;
+
+	if (editingShortcut.value) {
+		await shortcutStore.updateShortcut(
+			props.workspaceId,
+			editingShortcut.value.id,
+			formTitle.value.trim(),
+			formType.value,
+			formPath.value.trim(),
+			null
+		);
+	} else {
+		await shortcutStore.createShortcut(
+			props.workspaceId,
+			formTitle.value.trim(),
+			formType.value,
+			formPath.value.trim(),
+			null
+		);
+	}
+
+	emit("saved");
+	isOpen.value = false;
+}
+
+defineExpose({ openModal });
 </script>

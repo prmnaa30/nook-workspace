@@ -1,56 +1,42 @@
 <template>
-	<UContextMenu
-		v-model:open="contextMenuOpen"
-		:items="noteContextMenuItems"
-		:ui="{
-			content: 'min-w-52',
-		}"
-	>
+	<UContextMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
 		<div
-			@click="emit('click', props.note)"
-			class="workspace-card note-card group bg-slate-900/80 hover:bg-slate-800/40 border border-slate-800/80 hover:border-slate-700/40 rounded-xl overflow-hidden flex flex-col z-10 cursor-pointer transition-all shadow-md hover:shadow-lg duration-200"
-			:class="[
-				contextMenuOpen ? 'menu-active bg-slate-900 border-slate-700' : ''
-			]"
+			class="group relative flex flex-col justify-between p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all cursor-pointer shadow-xs min-h-[140px]"
+			@click="$emit('open')"
 		>
-			<div
-				class="h-14 w-full relative transition-all duration-200 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-b border-indigo-500/10"
-			>
-				<button
-					@click.stop="emit('delete', props.note)"
-					class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all border border-slate-800/60"
-					title="Delete Note"
-				>
-					<UIcon name="i-lucide-trash" size="14" />
-				</button>
+			<div>
+				<div class="flex items-start justify-between gap-3 mb-2">
+					<div class="flex items-center gap-2.5 truncate">
+						<div class="p-2 rounded-lg bg-amber-500/10 shrink-0">
+							<UIcon name="i-ph-note-bold" class="size-5 text-amber-500" />
+						</div>
+						<span class="font-bold text-sm text-neutral-900 dark:text-white truncate">
+							{{ note.title }}
+						</span>
+					</div>
 
-				<button
-					@click.stop="emit('edit', props.note)"
-					class="absolute top-2 right-10 opacity-0 group-hover:opacity-100 p-1 bg-slate-950/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-md transition-all border border-slate-800/60"
-					title="Rename Note"
-				>
-					<UIcon name="i-lucide-pencil" size="14" />
-				</button>
+					<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+						<UButton
+							color="neutral"
+							variant="ghost"
+							size="xs"
+							icon="i-ph-dots-three-vertical"
+							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+							@click.stop
+						/>
+					</UDropdownMenu>
+				</div>
+
+				<p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate mt-1">
+					{{ note.filename }}
+				</p>
 			</div>
 
-			<div
-				class="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800/80 flex items-center justify-center -mt-4 ml-4 relative z-10 shadow-md"
-			>
-				<span class="text-lg">📄</span>
-			</div>
-
-			<div class="p-4 pt-2.5 flex flex-col gap-2">
-				<h4
-					class="font-semibold text-slate-200 text-sm tracking-wide truncate"
-					:title="props.note.title"
-				>
-					{{ props.note.title }}
-				</h4>
-				<div
-					class="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1 bg-slate-950/40 p-2 rounded border border-slate-800/40 truncate w-full"
-					:title="props.note.filename"
-				>
-					<span class="truncate">{{ props.note.filename }}</span>
+			<div class="flex items-center justify-between mt-4 pt-2 border-t border-neutral-100 dark:border-neutral-900 text-xs text-neutral-400">
+				<span class="font-mono text-[11px] truncate max-w-[150px]">{{ note.filename }}</span>
+				<div class="flex items-center gap-1 text-amber-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+					<span>Open Editor</span>
+					<UIcon name="i-ph-arrow-right-bold" class="size-3.5" />
 				</div>
 			</div>
 		</div>
@@ -58,55 +44,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from "vue";
-import type { ContextMenuItem } from "@nuxt/ui";
+import { computed } from "vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 import type { Note } from "../../services/notes.service";
 
-const props = defineProps<{
+defineProps<{
 	note: Note;
 }>();
 
 const emit = defineEmits<{
-	(e: "click", note: Note): void;
-	(e: "edit", note: Note): void;
-	(e: "delete", note: Note): void;
+	(e: "open"): void;
+	(e: "edit"): void;
+	(e: "delete"): void;
 }>();
 
-const contextMenuOpen = ref(false);
-
-watch(contextMenuOpen, (isOpen) => {
-	if (isOpen) {
-		document.body.classList.add("menu-is-open");
-	} else {
-		document.body.classList.remove("menu-is-open");
-	}
-});
-
-onUnmounted(() => {
-	document.body.classList.remove("menu-is-open");
-});
-
-const noteContextMenuItems: ContextMenuItem[][] = [
+const menuItems = computed<DropdownMenuItem[][]>(() => [
 	[
 		{
-			label: "Open",
-			icon: "i-lucide-folder-open",
-			onSelect: () => emit("click", props.note),
+			label: "Open Note",
+			icon: "i-ph-book-open-bold",
+			onSelect: () => emit("open"),
 		},
 		{
 			label: "Rename Note",
-			icon: "i-lucide-pencil",
-			onSelect: () => emit("edit", props.note),
+			icon: "i-ph-pencil",
+			onSelect: () => emit("edit"),
 		},
 		{
-			type: "separator",
+			type: "separator" as const,
 		},
 		{
 			label: "Delete Note",
-			icon: "i-lucide-trash",
+			icon: "i-ph-trash",
 			color: "error" as const,
-			onSelect: () => emit("delete", props.note),
+			onSelect: () => emit("delete"),
 		},
 	],
-];
+]);
 </script>
