@@ -15,18 +15,20 @@
 					<UInput
 						v-model="searchQuery"
 						type="text"
-						icon="i-ph-magnifying-glass"
-						placeholder="Search timeline..."
+						icon="i-lucide-search"
+						placeholder="Search timeline tasks..."
 						color="neutral"
 						variant="outline"
 						size="sm"
-						class="w-40 sm:w-56 font-medium"
+						class="w-48 sm:w-64 font-medium"
 					>
 						<template v-if="searchQuery" #trailing>
 							<UButton
+								v-if="searchQuery"
+								color="neutral"
 								variant="link"
 								size="xs"
-								icon="i-ph-x"
+								icon="i-lucide-x"
 								class="p-0.5 cursor-pointer"
 								title="Clear Search"
 								@click="searchQuery = ''"
@@ -38,7 +40,7 @@
 				<TimelineViewSwitcher v-model="viewMode" />
 
 				<UButton
-					icon="i-ph-plus-bold"
+					icon="i-lucide-plus"
 					color="primary"
 					size="sm"
 					class="cursor-pointer font-medium shrink-0"
@@ -67,80 +69,12 @@
 			/>
 		</div>
 
-		<UModal
-			v-model:open="isModalOpen"
-			:title="editingTask ? 'Edit Task' : 'Add New Task'"
-			close-icon="i-lucide-x"
-		>
-			<template #body>
-				<form id="global-timeline-task-form" @submit.prevent="saveTask" class="flex flex-col gap-4">
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Target Workspace *</label>
-						<USelect
-							v-model="formWorkspaceId"
-							:items="workspaceOptions"
-							color="neutral"
-							variant="outline"
-							size="md"
-							class="w-full"
-							:disabled="!!editingTask"
-						/>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Title *</label>
-						<UInput
-							v-model="formTitle"
-							placeholder="Task title"
-							required
-							color="neutral"
-							variant="outline"
-							size="md"
-						/>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Description</label>
-						<UTextarea
-							v-model="formDescription"
-							placeholder="Details..."
-							color="neutral"
-							variant="outline"
-							size="md"
-							class="h-24 resize-none"
-						/>
-					</div>
-
-					<div class="grid grid-cols-2 gap-4">
-						<div class="flex flex-col gap-1">
-							<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Status</label>
-							<USelect
-								v-model="formStatus"
-								:items="statusOptions"
-								color="neutral"
-								variant="outline"
-								size="md"
-								class="w-full"
-							/>
-						</div>
-
-						<div class="flex flex-col gap-1">
-							<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Due Date *</label>
-							<TaskDateTimePicker v-model="formDueDate" />
-						</div>
-					</div>
-				</form>
-			</template>
-
-			<template #footer="{ close }">
-				<div class="flex justify-end gap-3">
-					<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
-					<UButton type="submit" form="global-timeline-task-form" color="primary">
-						{{ editingTask ? 'Save Changes' : 'Create Task' }}
-					</UButton>
-				</div>
-			</template>
-		</UModal>
+		<!-- Add/Edit Task Modal -->
+		<TaskFormModal
+			ref="formModalRef"
+			is-global
+			@saved="refreshTimelineTasks"
+		/>
 
 		<DeleteModal
 			ref="deleteModalRef"
@@ -159,7 +93,7 @@ import { useWorkspaceStore } from "../../stores/workspaces";
 import TimelineViewSwitcher, { type TimelineViewMode } from "./TimelineViewSwitcher.vue";
 import TaskCalendarView from "./TaskCalendarView.vue";
 import TimelineList from "./TimelineList.vue";
-import TaskDateTimePicker from "../common/TaskDateTimePicker.vue";
+import TaskFormModal from "../tasks/TaskFormModal.vue";
 import DeleteModal from "../common/DeleteModal.vue";
 
 const taskStore = useTaskStore();
@@ -174,19 +108,6 @@ watch(viewMode, (newVal) => {
 });
 
 const searchQuery = ref("");
-
-const statusOptions = [
-	{ label: "To Do", value: "TODO" },
-	{ label: "In Progress", value: "IN_PROGRESS" },
-	{ label: "Done", value: "DONE" },
-];
-
-const workspaceOptions = computed(() => {
-	return workspaceStore.workspaces.map((w) => ({
-		label: w.name,
-		value: w.id,
-	}));
-});
 
 const timelineTasks = computed(() => taskStore.timelineTasks);
 
@@ -230,35 +151,20 @@ async function moveTaskStatus(task: Task, newStatus: TaskStatus) {
 	await taskStore.getTimelineTasks();
 }
 
-const isModalOpen = ref(false);
-const editingTask = ref<Task | null>(null);
-const formWorkspaceId = ref<number | undefined>(undefined);
-const formTitle = ref("");
-const formDescription = ref("");
-const formStatus = ref<TaskStatus>("TODO");
-const formDueDate = ref("");
-
+const formModalRef = ref<any>(null);
 const deleteModalRef = ref<any>(null);
 const taskToDelete = ref<Task | null>(null);
 
+function refreshTimelineTasks() {
+	taskStore.getTimelineTasks();
+}
+
 function openAddModal() {
-	editingTask.value = null;
-	formWorkspaceId.value = workspaceStore.workspaces[0]?.id;
-	formTitle.value = "";
-	formDescription.value = "";
-	formStatus.value = "TODO";
-	formDueDate.value = new Date().toISOString().substring(0, 16);
-	isModalOpen.value = true;
+	formModalRef.value?.openModal();
 }
 
 function openEditModal(task: Task) {
-	editingTask.value = task;
-	formWorkspaceId.value = task.workspace_id;
-	formTitle.value = task.title;
-	formDescription.value = task.description || "";
-	formStatus.value = task.status;
-	formDueDate.value = task.due_date ? formatForDatetimeInput(task.due_date) : "";
-	isModalOpen.value = true;
+	formModalRef.value?.openModal(task);
 }
 
 function triggerDeleteTask(task: Task) {
@@ -272,31 +178,6 @@ async function handleConfirmDelete() {
 		await taskStore.getTimelineTasks();
 		taskToDelete.value = null;
 	}
-}
-
-async function saveTask() {
-	if (!formTitle.value.trim() || !formWorkspaceId.value || !formDueDate.value) return;
-
-	if (editingTask.value) {
-		await taskStore.updateTask(
-			editingTask.value.id,
-			formTitle.value.trim(),
-			formDescription.value.trim(),
-			formDueDate.value,
-			formStatus.value,
-			formWorkspaceId.value
-		);
-	} else {
-		await taskStore.createTask(
-			formWorkspaceId.value,
-			formTitle.value.trim(),
-			formDescription.value.trim(),
-			formDueDate.value
-		);
-	}
-
-	await taskStore.getTimelineTasks();
-	isModalOpen.value = false;
 }
 
 function formatDateGroup(dateStr: string) {
@@ -315,12 +196,5 @@ function formatDateGroup(dateStr: string) {
 		day: "numeric",
 		year: "numeric",
 	});
-}
-
-function formatForDatetimeInput(dateStr: string) {
-	const d = new Date(dateStr);
-	if (isNaN(d.getTime())) return "";
-	const pad = (n: number) => String(n).padStart(2, "0");
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 </script>

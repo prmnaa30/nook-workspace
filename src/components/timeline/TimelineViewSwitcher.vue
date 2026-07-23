@@ -3,10 +3,10 @@
 		class="inline-flex items-center py-[2.2px] px-0.5 rounded-md bg-neutral-300 dark:bg-default border border-neutral-200 dark:border-inverted/25 select-none gap-1"
 	>
 		<UButton
-			:variant="modelValue === 'list' ? 'solid' : 'ghost'"
+			:variant="modelValue === 'list' ? 'soft' : 'ghost'"
 			color="neutral"
 			size="xs"
-			icon="i-ph-list-bullets-bold"
+			icon="i-lucide-list"
 			label="List View"
 			class="cursor-pointer font-semibold py-0.75"
 			:class="modelValue !== 'list' ? 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-200' : ''"
@@ -14,10 +14,10 @@
 		/>
 
 		<UButton
-			:variant="modelValue === 'calendar' ? 'solid' : 'ghost'"
+			:variant="modelValue === 'calendar' ? 'soft' : 'ghost'"
 			color="neutral"
 			size="xs"
-			icon="i-ph-calendar-bold"
+			icon="i-lucide-calendar"
 			label="Calendar View"
 			class="cursor-pointer font-semibold py-0.75"
 			:class="modelValue !== 'calendar' ? 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-200' : ''"

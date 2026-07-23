@@ -4,7 +4,7 @@
 			v-if="Object.keys(groupedTimeline).length === 0"
 			class="h-48 flex flex-col items-center justify-center border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-400 dark:text-neutral-500"
 		>
-			<UIcon name="i-ph-calendar-blank" class="size-8 mb-2 opacity-50" />
+			<UIcon name="i-lucide-calendar" class="size-8 mb-2 opacity-50" />
 			<p class="text-sm">No upcoming tasks scheduled with due dates.</p>
 		</div>
 
@@ -38,7 +38,7 @@
 								color="neutral"
 								variant="ghost"
 								size="xs"
-								:icon="task.status === 'DONE' ? 'i-ph-check-circle-fill' : 'i-ph-circle'"
+								:icon="task.status === 'DONE' ? 'i-lucide-check-circle' : 'i-lucide-circle'"
 								class="cursor-pointer"
 								:class="task.status === 'DONE' ? 'text-emerald-500' : ''"
 								:title="task.status === 'DONE' ? 'Mark To Do' : 'Mark Done'"
@@ -74,7 +74,7 @@
 									color="neutral"
 									variant="ghost"
 									size="xs"
-									icon="i-ph-dots-three-vertical"
+									icon="i-lucide-more-vertical"
 									class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
 								/>
 							</UDropdownMenu>
@@ -115,12 +115,12 @@ function getTaskMenuItems(task: Task): DropdownMenuItem[][] {
 		[
 			{
 				label: "Edit Task",
-				icon: "i-ph-pencil",
+				icon: "i-lucide-pencil",
 				onSelect: () => emit("edit-task", task),
 			},
 			{
 				label: task.status === "DONE" ? "Mark as To Do" : "Mark as Done",
-				icon: task.status === "DONE" ? "i-ph-circle" : "i-ph-check-circle",
+				icon: task.status === "DONE" ? "i-lucide-check-circle" : "i-lucide-circle",
 				onSelect: () => emit("move-status", task, task.status === "DONE" ? "TODO" : "DONE"),
 			},
 			{
@@ -128,7 +128,7 @@ function getTaskMenuItems(task: Task): DropdownMenuItem[][] {
 			},
 			{
 				label: "Delete Task",
-				icon: "i-ph-trash",
+				icon: "i-lucide-trash-2",
 				color: "error" as const,
 				onSelect: () => emit("delete-task", task),
 			},

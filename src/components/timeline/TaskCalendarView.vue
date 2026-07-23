@@ -7,63 +7,68 @@
 			class="flex flex-col w-full items-center justify-between border-b border-neutral-200 dark:border-neutral-800 shrink-0 select-none"
 		>
 			<div class="w-full p-3 flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<!-- Clickable Month/Year Popover Picker-->
-					<UPopover
-						v-model:open="isDatePickerOpen"
-						:content="{ align: 'start' }"
-					>
+				<div class="flex items-center gap-2.5">
+					<!-- Month Navigator: (< Month Year >) -->
+					<div class="flex items-center justify-between gap-1.5 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
 						<UButton
+							icon="i-lucide-chevron-left"
 							color="neutral"
 							variant="ghost"
-							trailing-icon="i-ph-caret-down-bold"
-							class="text-base font-bold font-mono cursor-pointer"
-						>
-							{{ monthYearTitle }}
-						</UButton>
+							size="sm"
+							title="Previous Month"
+							class="cursor-pointer"
+							@click="prevMonth"
+						/>
 
-						<template #content>
-							<div
-								class="p-2 bg-white dark:bg-neutral-900 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800"
+						<!-- Clickable Month/Year Popover Picker-->
+						<UPopover
+							v-model:open="isDatePickerOpen"
+							:content="{ align: 'start', alignOffset: -38 }"
+						>
+							<UButton
+								color="neutral"
+								variant="ghost"
+								size="xs"
+								class="w-32 cursor-pointer px-2"
 							>
-								<UCalendar
-									v-model="calendarPickerValue"
-									@update:model-value="onMonthPicked"
-								/>
-							</div>
-						</template>
-					</UPopover>
+								<p class="w-full text-center text-sm font-bold font-mono">
+									{{ monthYearTitle }}
+								</p>
+							</UButton>
+
+							<template #content>
+								<div
+									class="p-2 bg-white dark:bg-neutral-900 rounded-xl shadow-xl"
+								>
+									<UCalendar
+										v-model="calendarPickerValue"
+										type="month"
+										@update:model-value="onMonthPicked"
+									/>
+								</div>
+							</template>
+						</UPopover>
+
+						<UButton
+							icon="i-lucide-chevron-right"
+							color="neutral"
+							variant="ghost"
+							size="sm"
+							title="Next Month"
+							class="cursor-pointer"
+							@click="nextMonth"
+						/>
+					</div>
 
 					<UButton
 						variant="soft"
 						color="neutral"
-						size="xs"
+						size="sm"
 						class="font-medium cursor-pointer"
 						@click="goToToday"
 					>
 						Today
 					</UButton>
-				</div>
-
-				<div class="flex items-center gap-1">
-					<UButton
-						icon="i-ph-caret-left-bold"
-						color="neutral"
-						variant="ghost"
-						size="xs"
-						title="Previous Month"
-						class="cursor-pointer"
-						@click="prevMonth"
-					/>
-					<UButton
-						icon="i-ph-caret-right-bold"
-						color="neutral"
-						variant="ghost"
-						size="xs"
-						title="Next Month"
-						class="cursor-pointer"
-						@click="nextMonth"
-					/>
 				</div>
 			</div>
 
@@ -81,20 +86,24 @@
 		</div>
 
 		<!-- Calendar Grid (7 columns x 6 rows) -->
-		<section class="overflow-y-scroll">
+		<section class="overflow-y-auto">
 			<div
 				class="flex-1 grid grid-cols-7 grid-rows-6 divide-x divide-y divide-neutral-200 dark:divide-neutral-800/80 min-h-0 overflow-y-auto custom-scrollbar"
 			>
 				<div
 					v-for="cell in calendarCells"
 					:key="cell.dateKey"
-					@click="openDayModal(cell)"
+					@click="handleCellClick(cell)"
 					class="flex flex-col p-2 min-h-[90px] transition-all relative group cursor-pointer"
 					:class="[
 						cell.isCurrentMonth
 							? 'bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-900/50'
-							: 'bg-neutral-100/50 dark:bg-neutral-900/30 text-neutral-400 dark:text-neutral-600 opacity-50',
-						cell.isToday ? 'ring-2 ring-inset ring-blue-500 bg-blue-500/5 dark:bg-blue-500/10' : '',
+							: 'bg-neutral-100/40 dark:bg-neutral-900/20 text-neutral-400 dark:text-neutral-600 opacity-60 hover:opacity-100 hover:bg-neutral-100 dark:hover:bg-neutral-900/50',
+						cell.isToday
+							? cell.isCurrentMonth
+								? 'ring-2 ring-inset ring-blue-500 bg-blue-500/5 dark:bg-blue-500/10'
+								: 'ring-2 ring-inset ring-blue-500/40 bg-blue-500/5 dark:bg-blue-500/10'
+							: '',
 					]"
 				>
 					<!-- Top Header of Cell: Day Number & Task Count -->
@@ -103,7 +112,9 @@
 							class="text-xs font-mono px-2 py-0.5 rounded-full font-bold"
 							:class="[
 								cell.isToday
-									? 'bg-blue-600 text-white shadow-xs'
+									? cell.isCurrentMonth
+										? 'bg-blue-600 text-white shadow-xs'
+										: 'bg-blue-600/40 text-white/90 shadow-xs'
 									: cell.isCurrentMonth
 										? 'text-neutral-800 dark:text-neutral-200'
 										: 'text-neutral-400 dark:text-neutral-600',
@@ -117,7 +128,7 @@
 							color="primary"
 							variant="subtle"
 							size="xs"
-							class="font-mono text-[10px]"
+							:class="['font-mono text-[10px]', !cell.isCurrentMonth && 'opacity-60']"
 						>
 							{{ cell.tasks.length }} {{ cell.tasks.length === 1 ? "task" : "tasks" }}
 						</UBadge>
@@ -129,7 +140,7 @@
 							v-for="task in cell.tasks.slice(0, 2)"
 							:key="task.id"
 							class="px-2 py-0.5 rounded text-[11px] font-medium border truncate flex items-center justify-between gap-1 shadow-2xs"
-							:class="getTaskChipClass(task)"
+							:class="[getTaskChipClass(task), !cell.isCurrentMonth && 'opacity-60 saturate-50']"
 						>
 							<span
 								class="truncate"
@@ -141,20 +152,21 @@
 
 						<span
 							v-if="cell.tasks.length > 2"
-							class="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono mt-0.5"
+							class="text-[10px] font-mono mt-0.5"
+							:class="cell.isCurrentMonth ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-400/60 dark:text-neutral-600'"
 						>
 							+{{ cell.tasks.length - 2 }} more
 						</span>
 					</div>
 
-					<!-- Hover "View tasks" Hint -->
+					<!-- Hover "View tasks" Hint (Only for current month) -->
 					<div
 						v-if="cell.isCurrentMonth"
 						class="absolute bottom-1.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold text-blue-500 flex items-center gap-0.5 pointer-events-none"
 					>
 						<span>View tasks</span>
 						<UIcon
-							name="i-ph-arrow-right-bold"
+							name="i-lucide-arrow-right"
 							class="size-3"
 						/>
 					</div>
@@ -167,6 +179,7 @@
 			v-model:open="isDayModalOpen"
 			:title="selectedCell ? `Tasks for ${formatFullDate(selectedCell.dateKey)}` : 'Day Tasks'"
 			close-icon="i-lucide-x"
+			:ui="{ content: 'z-[40]', overlay: 'z-[35]' }"
 		>
 			<template #body>
 				<div
@@ -194,11 +207,11 @@
 									color="neutral"
 									variant="ghost"
 									size="xs"
-									:icon="task.status === 'DONE' ? 'i-ph-check-circle-fill' : 'i-ph-circle'"
+									:icon="task.status === 'DONE' ? 'i-lucide-check-circle' : 'i-lucide-circle'"
 									class="cursor-pointer"
 									:class="task.status === 'DONE' ? 'text-emerald-500' : ''"
 									:title="task.status === 'DONE' ? 'Mark To Do' : 'Mark Done'"
-									@click="$emit('move-status', task, task.status === 'DONE' ? 'TODO' : 'DONE')"
+									@click="toggleTaskStatusFromModal(task)"
 								/>
 
 								<div class="flex flex-col">
@@ -227,19 +240,19 @@
 
 							<div class="flex items-center gap-2">
 								<UButton
-									icon="i-ph-pencil"
+									icon="i-lucide-pencil"
 									color="neutral"
 									variant="ghost"
-									size="xs"
+									size="sm"
 									title="Edit Task"
 									class="cursor-pointer"
 									@click="triggerEditTaskFromModal(task)"
 								/>
 								<UButton
-									icon="i-ph-trash"
+									icon="i-lucide-trash-2"
 									color="error"
 									variant="ghost"
-									size="xs"
+									size="sm"
 									title="Delete Task"
 									class="cursor-pointer"
 									@click="triggerDeleteTaskFromModal(task)"
@@ -251,7 +264,7 @@
 			</template>
 
 			<template #footer="{ close }">
-				<div class="flex justify-end">
+				<div class="flex w-full justify-end">
 					<UButton
 						color="neutral"
 						variant="soft"
@@ -286,7 +299,12 @@ const isDatePickerOpen = ref(false);
 const calendarPickerValue = ref<any>(undefined);
 
 const isDayModalOpen = ref(false);
-const selectedCell = ref<CalendarCell | null>(null);
+const selectedDateKey = ref<string | null>(null);
+
+const selectedCell = computed(() => {
+	if (!selectedDateKey.value) return null;
+	return calendarCells.value.find((c) => c.dateKey === selectedDateKey.value) || null;
+});
 
 const currentYear = computed(() => currentDate.value.getFullYear());
 const currentMonth = computed(() => currentDate.value.getMonth());
@@ -320,18 +338,29 @@ function onMonthPicked(val: any) {
 	isDatePickerOpen.value = false;
 }
 
-function openDayModal(cell: CalendarCell) {
-	selectedCell.value = cell;
+function handleCellClick(cell: CalendarCell) {
+	if (!cell.isCurrentMonth) {
+		const [yearStr, monthStr] = cell.dateKey.split("-");
+		const targetYear = parseInt(yearStr, 10);
+		const targetMonth = parseInt(monthStr, 10) - 1;
+		currentDate.value = new Date(targetYear, targetMonth, 1);
+		return;
+	}
+	selectedDateKey.value = cell.dateKey;
 	isDayModalOpen.value = true;
 }
 
+function toggleTaskStatusFromModal(task: Task) {
+	const newStatus: TaskStatus = task.status === "DONE" ? "TODO" : "DONE";
+	task.status = newStatus;
+	emit("move-status", task, newStatus);
+}
+
 function triggerEditTaskFromModal(task: Task) {
-	isDayModalOpen.value = false;
 	emit("edit-task", task);
 }
 
 function triggerDeleteTaskFromModal(task: Task) {
-	isDayModalOpen.value = false;
 	emit("delete-task", task);
 }
 
