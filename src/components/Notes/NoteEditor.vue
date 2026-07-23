@@ -87,7 +87,7 @@
 							</span>
 						</transition>
 						<UButton
-							icon="i-ph-trash"
+							icon="i-lucide-trash-2"
 							variant="ghost"
 							size="sm"
 							class="hover:text-red-400 hover:bg-red-500/20 cursor-pointer"
@@ -95,7 +95,7 @@
 							@click="emit('delete')"
 						/>
 						<UButton
-							icon="i-ph-x"
+							icon="i-lucide-x"
 							variant="soft"
 							size="sm"
 							class="cursor-pointer"
@@ -141,7 +141,7 @@
 					@node-change="selectedNode = $event"
 				>
 					<UButton
-						icon="i-ph-plus"
+						icon="i-lucide-plus"
 						color="neutral"
 						variant="ghost"
 						size="sm"
@@ -171,7 +171,7 @@
 							variant="ghost"
 							active-variant="soft"
 							size="sm"
-							icon="i-ph-dots-six-vertical"
+							icon="i-lucide-grip-vertical"
 							:active="open"
 							:class="ui.handle()"
 						/>
@@ -615,46 +615,46 @@ const handleItems = (editor: Editor): any[][] => {
 				},
 				{
 					label: "Turn into",
-					icon: "i-ph-arrows-left-right",
+					icon: "i-lucide-arrow-left-right",
 					children: [
-						{ kind: "paragraph", label: "Paragraph", icon: "i-ph-text-t" },
+						{ kind: "paragraph", label: "Paragraph", icon: "i-lucide-type" },
 						{
 							kind: "heading",
 							level: 1,
 							label: "Heading 1",
-							icon: "i-ph-text-h-one",
+							icon: "i-lucide-heading-1",
 						},
 						{
 							kind: "heading",
 							level: 2,
 							label: "Heading 2",
-							icon: "i-ph-text-h-two",
+							icon: "i-lucide-heading-2",
 						},
 						{
 							kind: "heading",
 							level: 3,
 							label: "Heading 3",
-							icon: "i-ph-text-h-three",
+							icon: "i-lucide-heading-3",
 						},
 						{
 							kind: "bulletList",
 							label: "Bullet List",
-							icon: "i-ph-list-bullets",
+							icon: "i-lucide-list",
 						},
 						{
 							kind: "orderedList",
 							label: "Ordered List",
-							icon: "i-ph-list-numbers",
+							icon: "i-lucide-list-ordered",
 						},
-						{ kind: "blockquote", label: "Blockquote", icon: "i-ph-quotes" },
-						{ kind: "codeBlock", label: "Code Block", icon: "i-ph-code" },
+						{ kind: "blockquote", label: "Blockquote", icon: "i-lucide-quote" },
+						{ kind: "codeBlock", label: "Code Block", icon: "i-lucide-code" },
 					],
 				},
 				{
 					kind: "clearFormatting",
 					pos: selectedNode.value?.pos,
 					label: "Reset formatting",
-					icon: "i-ph-eraser",
+					icon: "i-lucide-eraser",
 				},
 			],
 			[
@@ -662,11 +662,11 @@ const handleItems = (editor: Editor): any[][] => {
 					kind: "duplicate",
 					pos: selectedNode.value?.pos,
 					label: "Duplicate",
-					icon: "i-ph-copy",
+					icon: "i-lucide-copy",
 				},
 				{
 					label: "Copy to clipboard",
-					icon: "i-ph-clipboard-text",
+					icon: "i-lucide-clipboard",
 					onSelect: async () => {
 						if (!selectedNode.value) return;
 
@@ -705,13 +705,13 @@ const handleItems = (editor: Editor): any[][] => {
 					kind: "moveUp",
 					pos: selectedNode.value?.pos,
 					label: "Move up",
-					icon: "i-ph-arrow-up",
+					icon: "i-lucide-arrow-up",
 				},
 				{
 					kind: "moveDown",
 					pos: selectedNode.value?.pos,
 					label: "Move down",
-					icon: "i-ph-arrow-down",
+					icon: "i-lucide-arrow-down",
 				},
 			],
 			[
@@ -719,7 +719,7 @@ const handleItems = (editor: Editor): any[][] => {
 					kind: "delete",
 					pos: selectedNode.value?.pos,
 					label: "Delete",
-					icon: "i-ph-trash",
+					icon: "i-lucide-trash-2",
 				},
 			],
 		],
@@ -736,45 +736,45 @@ const suggestionItems: EditorSuggestionMenuItem<typeof customHandlers>[][] = [
 		{
 			kind: "paragraph",
 			label: "Paragraph",
-			icon: "i-ph-text-t",
+			icon: "i-lucide-type",
 		},
 		{
 			kind: "heading",
 			level: 1,
 			label: "Heading 1",
-			icon: "i-ph-text-h-one",
+			icon: "i-lucide-heading-1",
 		},
 		{
 			kind: "heading",
 			level: 2,
 			label: "Heading 2",
-			icon: "i-ph-text-h-two",
+			icon: "i-lucide-heading-2",
 		},
 		{
 			kind: "heading",
 			level: 3,
 			label: "Heading 3",
-			icon: "i-ph-text-h-three",
+			icon: "i-lucide-heading-3",
 		},
 		{
 			kind: "bulletList",
 			label: "Bullet List",
-			icon: "i-ph-list-bullets",
+			icon: "i-lucide-list",
 		},
 		{
 			kind: "orderedList",
 			label: "Numbered List",
-			icon: "i-ph-list-numbers",
+			icon: "i-lucide-list-ordered",
 		},
 		{
 			kind: "blockquote",
 			label: "Blockquote",
-			icon: "i-ph-quotes",
+			icon: "i-lucide-quote",
 		},
 		{
 			kind: "codeBlock",
 			label: "Code Block",
-			icon: "i-ph-code",
+			icon: "i-lucide-code",
 		},
 	],
 	[
@@ -785,12 +785,12 @@ const suggestionItems: EditorSuggestionMenuItem<typeof customHandlers>[][] = [
 		{
 			kind: "imageUpload",
 			label: "Image",
-			icon: "i-ph-image",
+			icon: "i-lucide-image",
 		},
 		{
 			kind: "horizontalRule",
 			label: "Horizontal Rule",
-			icon: "i-ph-minus",
+			icon: "i-lucide-minus",
 		},
 	],
 ];
@@ -800,7 +800,9 @@ watch(
 	async (newNote) => {
 		if (newNote) {
 			try {
+				const wsId = props.workspace?.id || newNote.workspace_id;
 				noteContent.value = await invoke("read_note", {
+					workspaceId: wsId,
 					filename: newNote.filename,
 				});
 			} catch (e) {
@@ -821,6 +823,7 @@ function debouncedSave() {
 		if (props.workspace && activeNote.value) {
 			try {
 				await invoke("write_note", {
+					workspaceId: props.workspace.id,
 					filename: activeNote.value.filename,
 					content: noteContent.value,
 				});
