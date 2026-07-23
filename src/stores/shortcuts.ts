@@ -4,6 +4,7 @@ import {
 	createShortcutService,
 	deleteShortcutService,
 	updateShortcutService,
+	moveShortcutService,
 	getShortcutsService,
 	type Shortcut,
 	type SearchShortcut,
@@ -57,6 +58,15 @@ export const useShortcutStore = defineStore("shortcut", () => {
 		await workspaceStore.getWorkspaces();
 	}
 
+	async function moveShortcut(shortcutId: number, targetWorkspaceId: number) {
+		await moveShortcutService(shortcutId, targetWorkspaceId);
+
+		if (currentWorkspaceId.value !== null) {
+			await getShortcuts(currentWorkspaceId.value);
+		}
+		await workspaceStore.getWorkspaces();
+	}
+
 	async function deleteShortcut(id: number) {
 		await deleteShortcutService(id);
 
@@ -74,6 +84,7 @@ export const useShortcutStore = defineStore("shortcut", () => {
 		getShortcuts,
 		createShortcut,
 		updateShortcut,
+		moveShortcut,
 		deleteShortcut,
 	};
 });

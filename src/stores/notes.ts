@@ -4,6 +4,7 @@ import {
 	createNoteService,
 	deleteNoteService,
 	getNotesService,
+	moveNoteService,
 	searchAllNotesService,
 	SearchNote,
 	updateNoteService,
@@ -52,6 +53,7 @@ export const useNoteStore = defineStore("notes", () => {
 			await createNoteService(workspaceId, cleanTitle, filename);
 
 			await invoke("write_note", {
+				workspaceId,
 				filename,
 				content: `# ${cleanTitle}\n\n`,
 			});
@@ -87,6 +89,7 @@ export const useNoteStore = defineStore("notes", () => {
 		try {
 			if (oldNote.filename !== newFilename) {
 				await invoke("rename_note_file", {
+					workspaceId,
 					oldFilename: oldNote.filename,
 					newFilename: newFilename,
 				});
@@ -103,6 +106,32 @@ export const useNoteStore = defineStore("notes", () => {
 			}
 		} catch (error) {
 			console.error("Failed to rename note:", error);
+		}
+	}
+
+	async function moveNote(
+		fromWorkspaceId: number,
+		toWorkspaceId: number,
+		noteId: number,
+		filename: string,
+	) {
+		try {
+			await moveNoteService(noteId, toWorkspaceId);
+
+			await invoke("move_note_file", {
+				fromWorkspaceId,
+				toWorkspaceId,
+				filename,
+			});
+
+			if (activeNote.value?.id === noteId) {
+				activeNote.value = null;
+			}
+
+			await getNotes(fromWorkspaceId);
+			await workspaceStore.getWorkspaces();
+		} catch (error) {
+			console.error("Failed to move note:", error);
 		}
 	}
 
@@ -125,6 +154,7 @@ export const useNoteStore = defineStore("notes", () => {
 			await deleteNoteService(noteId);
 
 			await invoke("delete_note_file", {
+				workspaceId,
 				filename,
 			});
 
@@ -132,6 +162,30 @@ export const useNoteStore = defineStore("notes", () => {
 			await workspaceStore.getWorkspaces();
 		} catch (error) {
 			console.error("Failed to delete note:", error);
+		}
+	}
+
+	async function checkNoteFileExists(workspaceId: number, filename: string): Promise<boolean> {
+		try {
+			return await invoke<boolean>("check_note_file_exists", {
+				workspaceId,
+				filename,
+			});
+		} catch (error) {
+			console.error("Failed to check note file exists:", error);
+			return false;
+		}
+	}
+
+	async function recreateNoteFile(workspaceId: number, filename: string, title: string) {
+		try {
+			await invoke("write_note", {
+				workspaceId,
+				filename,
+				content: `# ${title}\n\n`,
+			});
+		} catch (error) {
+			console.error("Failed to recreate note file:", error);
 		}
 	}
 
@@ -143,8 +197,11 @@ export const useNoteStore = defineStore("notes", () => {
 		getNotes,
 		createNote,
 		updateNote,
+		moveNote,
 		touchNote,
 		deleteNote,
+		checkNoteFileExists,
+		recreateNoteFile,
 		sanitizeFilename,
 	};
 });

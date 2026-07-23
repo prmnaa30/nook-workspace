@@ -59,6 +59,21 @@ export async function updateShortcutService(
 	);
 }
 
+export async function moveShortcutService(
+	shortcutId: number,
+	targetWorkspaceId: number,
+): Promise<void> {
+	const db = await dbPromise;
+	await db.execute(
+		"UPDATE shortcuts SET workspace_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+		[targetWorkspaceId, shortcutId],
+	);
+	await db.execute(
+		"UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+		[targetWorkspaceId],
+	);
+}
+
 export async function deleteShortcutService(id: number): Promise<void> {
 	const db = await dbPromise;
 	await db.execute("DELETE FROM shortcuts WHERE id = $1", [id]);

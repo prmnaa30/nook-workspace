@@ -61,6 +61,21 @@ export async function updateNoteTimestampService(noteId: number) {
 	);
 }
 
+export async function moveNoteService(
+	noteId: number,
+	targetWorkspaceId: number,
+) {
+	const db = await dbPromise;
+	await db.execute(
+		"UPDATE notes SET workspace_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+		[targetWorkspaceId, noteId],
+	);
+	await db.execute(
+		"UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+		[targetWorkspaceId],
+	);
+}
+
 export async function deleteNoteService(noteId: number) {
 	const db = await dbPromise;
 	await db.execute("DELETE FROM notes WHERE id = $1", [noteId]);
