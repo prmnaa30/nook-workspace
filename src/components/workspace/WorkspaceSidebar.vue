@@ -130,7 +130,7 @@
 				color="neutral"
 				variant="subtle"
 				size="xs"
-				>v1.2.0</UBadge
+				>v1.3.0</UBadge
 			>
 		</div>
 

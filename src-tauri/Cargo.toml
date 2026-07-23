@@ -1,6 +1,6 @@
 [package]
 name = "nook"
-version = "1.2.0"
+version = "1.3.0"
 description = "Your personal workflow manager. Manage shortcut to URL, file or folder. Add notes to keep things together."
 authors = ["creez"]
 edition = "2021"
