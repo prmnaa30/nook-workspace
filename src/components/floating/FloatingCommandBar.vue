@@ -284,9 +284,12 @@ async function closeWindow() {
 
 const handleGlobalKeyDown = async (event: KeyboardEvent) => {
 	if (event.key === "Tab") {
-		event.preventDefault();
 		if (event.ctrlKey) {
+			event.preventDefault();
 			toggleMode();
+		} else if (mode.value === "search") {
+			event.preventDefault();
+			moveSelection(event.shiftKey ? -1 : 1);
 		}
 		return;
 	}
