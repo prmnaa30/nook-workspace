@@ -24,7 +24,7 @@
         "label": "floating",
         "title": "Nook Bar",
         "width": 650,
-        "height": 400,
+        "height": 480,
         "decorations": false,
         "transparent": true,
         "visible": false,

@@ -145,6 +145,15 @@ pub async fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn resize_floating_window(app: tauri::AppHandle, width: f64, height: f64) -> Result<(), String> {
+    use tauri::{Manager, LogicalSize};
+    if let Some(float_win) = app.get_webview_window("floating") {
+        let _ = float_win.set_size(LogicalSize::new(width, height));
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }

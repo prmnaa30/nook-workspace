@@ -31,6 +31,12 @@ pub fn run() {
             sql: include_str!("../migrations/03_add_workspace_triggers.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 4,
+            description: "add tasks table and workspace visibility column",
+            sql: include_str!("../migrations/04_add_tasks_table.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let (tx, _rx) = broadcast::channel::<String>(10);
@@ -153,6 +159,7 @@ pub fn run() {
             commands::greet,
             commands::execute_shortcut,
             commands::open_main_window,
+            commands::resize_floating_window,
             notes::read_note,
             notes::write_note,
             notes::rename_note_file,
