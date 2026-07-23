@@ -6,61 +6,42 @@
 		>
 			<FloatingCommandBar />
 		</div>
-		<Sidebar v-else>
-			<WorkspaceDetails
-				:workspace="activeWorkspace"
-				@update:workspace="handleWorkspaceUpdate"
-			/>
-		</Sidebar>
+		<div v-else class="flex w-screen h-screen overflow-hidden bg-neutral-900 text-neutral-100">
+			<WorkspaceSidebar />
+			<main class="flex-1 h-full overflow-hidden bg-white dark:bg-neutral-950">
+				<Dashboard v-if="workspaceStore.currentView === 'dashboard'" />
+				<GlobalTasks v-else-if="workspaceStore.currentView === 'global-tasks'" />
+				<GlobalTimeline v-else-if="workspaceStore.currentView === 'global-timeline'" />
+				<WorkspaceDetails
+					v-else-if="workspaceStore.currentView === 'workspace' && workspaceStore.currentWorkspaceId"
+					ref="workspaceDetailsRef"
+					:workspace-id="workspaceStore.currentWorkspaceId"
+				/>
+			</main>
+		</div>
 	</UApp>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import WorkspaceDetails from "./components/WorkspaceDetails.vue";
-import { useWorkspaceStore } from "./stores/workspaces.ts";
-import { useNoteStore } from "./stores/notes.ts";
+import { ref, onMounted, onUnmounted } from "vue";
+import WorkspaceSidebar from "./components/workspace/WorkspaceSidebar.vue";
+import WorkspaceDetails from "./components/workspace/WorkspaceDetails.vue";
+import Dashboard from "./components/common/Dashboard.vue";
+import GlobalTasks from "./components/tasks/GlobalTasks.vue";
+import GlobalTimeline from "./components/timeline/GlobalTimeline.vue";
+import FloatingCommandBar from "./components/floating/FloatingCommandBar.vue";
+
+import { useWorkspaceStore } from "./stores/workspaces";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 
-const store = useWorkspaceStore();
-const noteStore = useNoteStore();
+const workspaceStore = useWorkspaceStore();
 
-const workspaces = computed(() => store.workspaces);
-const activeWorkspace = computed(
-	() => workspaces.value.find((w) => w.id === store.currentWorkspaceId) || null,
-);
 const windowLabel = ref("main");
-
-async function fetchWorkspaces() {
-	try {
-		await store.getWorkspaces();
-
-		if (
-			activeWorkspace.value &&
-			!workspaces.value.find((w) => w.id === activeWorkspace.value?.id)
-		) {
-			store.selectWorkspace(activeWorkspace.value.id);
-		}
-	} catch (error) {
-		console.error("Failed to load workspaces:", error);
-	}
-}
-
-async function handleWorkspaceUpdate(id: number, payload: { name: string; description: string }) {
-	await store.updateWorkspace(id, payload.name, payload.description);
-
-	await fetchWorkspaces();
-
-	const updated = workspaces.value.find((w) => w.id === id);
-	if (updated) {
-		store.selectWorkspace(id);
-	}
-}
+const workspaceDetailsRef = ref<any>(null);
 
 const handleKeyDown = (event: KeyboardEvent) => {
 	if (event.key === "Escape") {
-		// If any modal, dialog, or menu is active, let it handle the Escape key first
 		const hasActiveModal = document.querySelector(
 			'[role="dialog"], [role="alertdialog"], [role="menu"], [data-radix-popper-content-wrapper]'
 		);
@@ -68,8 +49,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
 			return;
 		}
 
-		if (store.currentWorkspaceId !== null) {
-			store.selectWorkspace(null);
+		if (workspaceStore.currentView !== "dashboard") {
+			workspaceStore.selectView("dashboard");
 		}
 	}
 
@@ -102,17 +83,17 @@ onMounted(async () => {
 		listen<{ workspaceId: number; noteId: number }>("open-note", async (event) => {
 			const { workspaceId, noteId } = event.payload;
 
-			store.selectWorkspace(workspaceId);
+			workspaceStore.selectWorkspace(workspaceId);
 
-			await noteStore.getNotes(workspaceId);
-			const targetNote = noteStore.notes.find((n) => n.id === noteId);
-			if (targetNote) {
-				noteStore.activeNote = targetNote;
-			}
+			setTimeout(() => {
+				if (workspaceDetailsRef.value) {
+					workspaceDetailsRef.value.switchToNotesTabAndOpen(noteId);
+				}
+			}, 100);
 		});
 	}
 
-	await fetchWorkspaces();
+	await workspaceStore.getWorkspaces();
 });
 
 onUnmounted(() => {
