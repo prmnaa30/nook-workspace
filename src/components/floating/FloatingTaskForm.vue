@@ -50,7 +50,7 @@
 			</div>
 		</form>
 
-		<div class="flex justify-end gap-3 mt-4 pt-2 border-t border-slate-800/60">
+		<div class="flex justify-end gap-3 mt-4">
 			<UButton
 				variant="soft"
 				color="neutral"
@@ -64,7 +64,7 @@
 				form="quick-task-form"
 				color="primary"
 				size="sm"
-				icon="i-ph-plus-bold"
+				icon="i-lucide-plus"
 				class="cursor-pointer font-medium"
 			>
 				Create Task

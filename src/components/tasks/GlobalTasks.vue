@@ -15,7 +15,7 @@
 					<UInput
 						v-model="searchQuery"
 						type="text"
-						icon="i-ph-magnifying-glass"
+						icon="i-lucide-search"
 						placeholder="Search tasks..."
 						color="neutral"
 						variant="outline"
@@ -28,7 +28,7 @@
 								color="neutral"
 								variant="link"
 								size="xs"
-								icon="i-ph-x"
+								icon="i-lucide-x"
 								class="p-0.5 cursor-pointer"
 								title="Clear Search"
 								@click="searchQuery = ''"
@@ -37,8 +37,25 @@
 					</UInput>
 				</div>
 
+				<!-- Sort Dropdown -->
+				<UDropdownMenu
+					:items="dropdownSortItems"
+					:content="{ align: 'end' }"
+				>
+					<UButton
+						color="neutral"
+						variant="outline"
+						size="sm"
+						icon="i-lucide-arrow-up-down"
+						class="cursor-pointer font-medium"
+						title="Sort Tasks"
+					>
+						<span class="hidden sm:inline">Sort: {{ activeSortLabel }}</span>
+					</UButton>
+				</UDropdownMenu>
+
 				<UButton
-					icon="i-ph-plus-bold"
+					icon="i-lucide-plus"
 					color="primary"
 					size="sm"
 					class="cursor-pointer font-medium shrink-0"
@@ -50,7 +67,7 @@
 		</div>
 
 		<!-- Columns Container (Kanban Board) -->
-		<div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 overflow-y-auto pr-1">
+		<div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
 			<div
 				v-for="col in columns"
 				:key="col.status"
@@ -70,7 +87,7 @@
 						</span>
 					</div>
 					<UButton
-						icon="i-ph-plus"
+						icon="i-lucide-plus"
 						color="neutral"
 						variant="ghost"
 						size="xs"
@@ -114,7 +131,7 @@
 										color="neutral"
 										variant="ghost"
 										size="xs"
-										icon="i-ph-dots-three-vertical"
+										icon="i-lucide-more-vertical"
 										class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
 									/>
 								</UDropdownMenu>
@@ -140,7 +157,7 @@
 									class="flex items-center gap-1 font-mono text-[11px]"
 									:class="getDueDateClass(task.due_date, task.status)"
 								>
-									<UIcon name="i-ph-calendar-blank" class="size-3.5 shrink-0" />
+									<UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />
 									<span>{{ formatDate(task.due_date) }}</span>
 								</div>
 								<div v-else class="text-[11px] text-neutral-400 dark:text-neutral-600">
@@ -154,7 +171,7 @@
 										color="neutral"
 										variant="ghost"
 										size="xs"
-										icon="i-ph-arrow-left"
+										icon="i-lucide-arrow-left"
 										class="cursor-pointer"
 										title="Move Left"
 										@click="moveTaskStatus(task, col.status === 'DONE' ? 'IN_PROGRESS' : 'TODO')"
@@ -164,7 +181,7 @@
 										color="neutral"
 										variant="ghost"
 										size="xs"
-										icon="i-ph-arrow-right"
+										icon="i-lucide-arrow-right"
 										class="cursor-pointer"
 										title="Move Right"
 										@click="moveTaskStatus(task, col.status === 'TODO' ? 'IN_PROGRESS' : 'DONE')"
@@ -178,80 +195,11 @@
 		</div>
 
 		<!-- Add/Edit Task Modal -->
-		<UModal
-			v-model:open="isModalOpen"
-			:title="editingTask ? 'Edit Task' : 'Add New Task'"
-			close-icon="i-lucide-x"
-		>
-			<template #body>
-				<form id="global-task-form" @submit.prevent="saveTask" class="flex flex-col gap-4">
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Target Workspace *</label>
-						<USelect
-							v-model="formWorkspaceId"
-							:items="workspaceOptions"
-							color="neutral"
-							variant="outline"
-							size="md"
-							class="w-full"
-							:disabled="!!editingTask"
-						/>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Title *</label>
-						<UInput
-							v-model="formTitle"
-							placeholder="Task title (e.g. Design Landing Page)"
-							required
-							color="neutral"
-							variant="outline"
-							size="md"
-						/>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Description</label>
-						<UTextarea
-							v-model="formDescription"
-							placeholder="Details, steps, or notes..."
-							color="neutral"
-							variant="outline"
-							size="md"
-							class="h-28 resize-none"
-						/>
-					</div>
-
-					<div class="grid grid-cols-2 gap-4">
-						<div class="flex flex-col gap-1">
-							<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Status</label>
-							<USelect
-								v-model="formStatus"
-								:items="statusOptions"
-								color="neutral"
-								variant="outline"
-								size="md"
-								class="w-full"
-							/>
-						</div>
-
-						<div class="flex flex-col gap-1">
-							<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Due Date</label>
-							<TaskDateTimePicker v-model="formDueDate" />
-						</div>
-					</div>
-				</form>
-			</template>
-
-			<template #footer="{ close }">
-				<div class="flex justify-end gap-3">
-					<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
-					<UButton type="submit" form="global-task-form" color="primary">
-						{{ editingTask ? 'Save Changes' : 'Create Task' }}
-					</UButton>
-				</div>
-			</template>
-		</UModal>
+		<TaskFormModal
+			ref="formModalRef"
+			is-global
+			@saved="refreshGlobalTasks"
+		/>
 
 		<!-- Delete Task Modal -->
 		<DeleteModal
@@ -265,11 +213,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useStorage } from "@vueuse/core";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import type { Task, TaskStatus } from "../../services/tasks.service";
 import { useTaskStore } from "../../stores/tasks";
 import { useWorkspaceStore } from "../../stores/workspaces";
-import TaskDateTimePicker from "../common/TaskDateTimePicker.vue";
+import TaskFormModal from "./TaskFormModal.vue";
 import DeleteModal from "../common/DeleteModal.vue";
 
 const taskStore = useTaskStore();
@@ -281,19 +230,49 @@ const columns = [
 	{ status: "DONE" as TaskStatus, title: "Done", colorDot: "bg-emerald-500" },
 ];
 
-const statusOptions = [
-	{ label: "To Do", value: "TODO" },
-	{ label: "In Progress", value: "IN_PROGRESS" },
-	{ label: "Done", value: "DONE" },
+const searchQuery = ref("");
+const sortKey = useStorage("nook_global_tasks_sort_key", "title");
+const sortOrder = useStorage<"asc" | "desc">("nook_global_tasks_sort_order", "asc");
+
+const sortOptions = [
+	{ label: "Title", value: "title" },
+	{ label: "Due Date", value: "due_date" },
+	{ label: "Date Created", value: "created_at" },
 ];
 
-const searchQuery = ref("");
+const activeSortLabel = computed(() => {
+	const match = sortOptions.find((opt) => opt.value === sortKey.value);
+	return match ? match.label : "Default";
+});
 
-const workspaceOptions = computed(() => {
-	return workspaceStore.workspaces.map((w) => ({
-		label: w.name,
-		value: w.id,
-	}));
+function handleSortSelect(value: string) {
+	if (sortKey.value === value) {
+		sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+	} else {
+		sortKey.value = value;
+		sortOrder.value = "asc";
+	}
+}
+
+const dropdownSortItems = computed<DropdownMenuItem[][]>(() => {
+	return [
+		sortOptions.map((opt) => {
+			const isActive = sortKey.value === opt.value;
+			return {
+				label: opt.label,
+				icon: isActive
+					? sortOrder.value === "asc"
+						? "i-lucide-arrow-up"
+						: "i-lucide-arrow-down"
+					: "i-lucide-minus",
+				onSelect: () => handleSortSelect(opt.value),
+				ui: {
+					item: isActive ? "text-primary" : "text-primary/60",
+					itemLeadingIcon: isActive ? "text-primary" : "",
+				} as any,
+			};
+		}),
+	];
 });
 
 const globalTasks = computed(() => taskStore.globalTasks);
@@ -309,6 +288,20 @@ const filteredTasks = computed(() => {
 				(t.description && t.description.toLowerCase().includes(query))
 		);
 	}
+
+	result.sort((a: any, b: any) => {
+		let valA = a[sortKey.value] || "";
+		let valB = b[sortKey.value] || "";
+
+		if (typeof valA === "string" && typeof valB === "string") {
+			valA = valA.toLowerCase();
+			valB = valB.toLowerCase();
+		}
+
+		if (valA < valB) return sortOrder.value === "asc" ? -1 : 1;
+		if (valA > valB) return sortOrder.value === "asc" ? 1 : -1;
+		return 0;
+	});
 
 	return result;
 });
@@ -356,40 +349,24 @@ async function moveTaskStatus(task: Task, newStatus: TaskStatus) {
 	await taskStore.getGlobalTasks();
 }
 
-const isModalOpen = ref(false);
-const editingTask = ref<Task | null>(null);
-const formWorkspaceId = ref<number | undefined>(undefined);
-const formTitle = ref("");
-const formDescription = ref("");
-const formStatus = ref<TaskStatus>("TODO");
-const formDueDate = ref("");
-
+const formModalRef = ref<any>(null);
 const deleteModalRef = ref<any>(null);
 const taskToDelete = ref<Task | null>(null);
 
+function refreshGlobalTasks() {
+	taskStore.getGlobalTasks();
+}
+
 function openAddModal() {
-	editingTask.value = null;
-	formWorkspaceId.value = workspaceStore.workspaces[0]?.id;
-	formTitle.value = "";
-	formDescription.value = "";
-	formStatus.value = "TODO";
-	formDueDate.value = "";
-	isModalOpen.value = true;
+	formModalRef.value?.openModal();
 }
 
 function openAddModalForStatus(status: TaskStatus) {
-	openAddModal();
-	formStatus.value = status;
+	formModalRef.value?.openModal(undefined, status);
 }
 
 function openEditModal(task: Task) {
-	editingTask.value = task;
-	formWorkspaceId.value = task.workspace_id;
-	formTitle.value = task.title;
-	formDescription.value = task.description || "";
-	formStatus.value = task.status;
-	formDueDate.value = task.due_date ? formatForDatetimeInput(task.due_date) : "";
-	isModalOpen.value = true;
+	formModalRef.value?.openModal(task);
 }
 
 function triggerDeleteTask(task: Task) {
@@ -405,42 +382,17 @@ async function handleConfirmDelete() {
 	}
 }
 
-async function saveTask() {
-	if (!formTitle.value.trim() || !formWorkspaceId.value) return;
-
-	if (editingTask.value) {
-		await taskStore.updateTask(
-			editingTask.value.id,
-			formTitle.value.trim(),
-			formDescription.value.trim(),
-			formDueDate.value || undefined,
-			formStatus.value,
-			formWorkspaceId.value
-		);
-	} else {
-		await taskStore.createTask(
-			formWorkspaceId.value,
-			formTitle.value.trim(),
-			formDescription.value.trim(),
-			formDueDate.value || undefined
-		);
-	}
-
-	await taskStore.getGlobalTasks();
-	isModalOpen.value = false;
-}
-
 function getTaskMenuItems(task: Task): DropdownMenuItem[][] {
 	return [
 		[
 			{
 				label: "Edit Task",
-				icon: "i-ph-pencil",
+				icon: "i-lucide-pencil",
 				onSelect: () => openEditModal(task),
 			},
 			{
 				label: task.status === "DONE" ? "Mark as To Do" : "Mark as Done",
-				icon: task.status === "DONE" ? "i-ph-circle" : "i-ph-check-circle",
+				icon: task.status === "DONE" ? "i-lucide-circle" : "i-lucide-check-circle",
 				onSelect: () => moveTaskStatus(task, task.status === "DONE" ? "TODO" : "DONE"),
 			},
 			{
@@ -448,7 +400,7 @@ function getTaskMenuItems(task: Task): DropdownMenuItem[][] {
 			},
 			{
 				label: "Delete Task",
-				icon: "i-ph-trash",
+				icon: "i-lucide-trash-2",
 				color: "error" as const,
 				onSelect: () => triggerDeleteTask(task),
 			},
@@ -465,13 +417,6 @@ function formatDate(dateStr: string) {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-}
-
-function formatForDatetimeInput(dateStr: string) {
-	const d = new Date(dateStr);
-	if (isNaN(d.getTime())) return "";
-	const pad = (n: number) => String(n).padStart(2, "0");
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function getDueDateClass(dateStr: string, status: TaskStatus) {
