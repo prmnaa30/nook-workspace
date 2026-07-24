@@ -130,8 +130,9 @@
 				color="neutral"
 				variant="subtle"
 				size="xs"
-				>v1.3.0</UBadge
 			>
+				v1.3.1
+			</UBadge>
 		</div>
 
 		<!-- Workspace Modal -->
