@@ -201,6 +201,51 @@ import TextAlign from "@tiptap/extension-text-align";
 import EditorLinkPopover from "./EditorLinkPopover.vue";
 import { mapEditorItems } from "@nuxt/ui/utils/editor";
 import { DOMSerializer } from "@tiptap/pm/model";
+import { Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { marked } from "marked";
+import { CodeBlockShiki } from "tiptap-extension-code-block-shiki";
+
+const MarkdownPaste = Extension.create({
+	name: "markdownPaste",
+	addProseMirrorPlugins() {
+		return [
+			new Plugin({
+				key: new PluginKey("markdownPaste"),
+				props: {
+					handlePaste: (_view, event) => {
+						const clipboardData = event.clipboardData;
+						if (!clipboardData) return false;
+
+						if (clipboardData.files && clipboardData.files.length > 0) {
+							return false;
+						}
+
+						const html = clipboardData.getData("text/html");
+						if (html && html.trim()) {
+							return false;
+						}
+
+						const text = clipboardData.getData("text/plain");
+						if (!text || !text.trim()) return false;
+
+						try {
+							const htmlContent = marked.parse(text, { async: false }) as string;
+							if (htmlContent && htmlContent.trim()) {
+								this.editor.commands.insertContent(htmlContent);
+								return true;
+							}
+						} catch (err) {
+							console.error("Failed to parse pasted markdown:", err);
+						}
+
+						return false;
+					},
+				},
+			}),
+		];
+	},
+});
 
 const props = defineProps<{
 	workspace: Workspace | null;
@@ -217,7 +262,14 @@ const { activeNote } = storeToRefs(store);
 const noteContent = ref("");
 const isSaving = ref(false);
 
-const editorExtensions = [ImageUpload, TextAlign.configure({ types: ["heading", "paragraph"] })];
+const editorExtensions = [
+	ImageUpload,
+	TextAlign.configure({ types: ["heading", "paragraph"] }),
+	MarkdownPaste,
+	CodeBlockShiki.configure({
+		defaultTheme: "material-theme-darker"
+	}),
+];
 
 const selectedNode = ref<{ node: JSONContent; pos: number }>();
 

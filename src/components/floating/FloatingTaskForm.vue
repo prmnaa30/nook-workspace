@@ -24,7 +24,10 @@
 					color="neutral"
 					variant="outline"
 					size="md"
-					class="w-full font-medium"
+					class="w-full"
+					:ui="{
+						base: 'placeholder:text-sm'
+					}"
 					@keydown.esc.prevent="$emit('close-window')"
 				/>
 			</div>
@@ -36,14 +39,16 @@
 				</div>
 				<div class="flex flex-col gap-1">
 					<label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Description (Optional)</label>
-					<UInput
+					<UTextarea
 						v-model="taskDescription"
-						type="text"
 						placeholder="Short details..."
 						color="neutral"
-						variant="subtle"
+						variant="outline"
 						size="md"
-						class="w-full"
+						:ui="{
+							base: 'h-32 custom-scrollbar placeholder:text-sm'
+						}"
+						autoresize
 						@keydown.esc.prevent="$emit('close-window')"
 					/>
 				</div>
