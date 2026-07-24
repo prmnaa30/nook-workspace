@@ -95,4 +95,7 @@ export default defineConfig(async () => ({
       'prosemirror-gapcursor'
     ]
   },
+  build: {
+    target: "esnext"
+  }
 }));
