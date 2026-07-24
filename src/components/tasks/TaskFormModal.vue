@@ -41,7 +41,10 @@
 						color="neutral"
 						variant="outline"
 						size="md"
-						class="h-28 resize-none"
+						:ui="{
+							base: 'custom-scrollbar h-32'
+						}"
+						autoresize
 					/>
 				</div>
 

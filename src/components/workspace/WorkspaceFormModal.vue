@@ -5,9 +5,16 @@
 		close-icon="i-lucide-x"
 	>
 		<template #body>
-			<form id="workspace-form" @submit.prevent="saveWorkspace" class="flex flex-col gap-4">
+			<form
+				id="workspace-form"
+				@submit.prevent="saveWorkspace"
+				class="flex flex-col gap-4"
+			>
 				<div class="flex flex-col gap-1">
-					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Workspace Name *</label>
+					<label
+						class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider"
+						>Workspace Name *</label
+					>
 					<UInput
 						v-model="formName"
 						placeholder="Workspace name (e.g. JLPT N3, Work Project)"
@@ -19,32 +26,61 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Description</label>
-					<UTextarea
+					<label
+						class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider"
+						>Description</label
+					>
+					<UInput
 						v-model="formDescription"
+						type="text"
 						placeholder="Optional notes or details..."
 						color="neutral"
 						variant="outline"
 						size="md"
-						class="h-20 resize-none"
-					/>
+						:maxlength="maxDescriptionLength"
+						:ui="{
+							trailing: 'pointer-events-none',
+						}"
+					>
+						<template #trailing>
+							<span class="text-xs text-muted">
+								{{ formDescription?.length }}/{{ maxDescriptionLength }}
+							</span>
+						</template>
+					</UInput>
 				</div>
 
 				<div class="flex items-center justify-between pt-2">
 					<div class="flex flex-col">
-						<span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200">Show in Global View</span>
-						<span class="text-[11px] text-neutral-400">Include tasks from this workspace in global dashboard</span>
+						<span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200"
+							>Show in Global View</span
+						>
+						<span class="text-[11px] text-neutral-400"
+							>Include tasks from this workspace in global dashboard</span
+						>
 					</div>
-					<USwitch v-model="formShowInGlobal" color="primary" />
+					<USwitch
+						v-model="formShowInGlobal"
+						color="primary"
+					/>
 				</div>
 			</form>
 		</template>
 
 		<template #footer="{ close }">
-			<div class="flex justify-end gap-3">
-				<UButton variant="soft" color="neutral" @click="close">Cancel</UButton>
-				<UButton type="submit" form="workspace-form" color="primary">
-					{{ editingWorkspace ? 'Save Changes' : 'Create Workspace' }}
+			<div class="flex w-full justify-end gap-3">
+				<UButton
+					variant="soft"
+					color="neutral"
+					@click="close"
+					>Cancel</UButton
+				>
+				<UButton
+					type="submit"
+					form="workspace-form"
+					color="primary"
+				>
+					{{ editingWorkspace ? "Save Changes" : "Create Workspace" }}
 				</UButton>
 			</div>
 		</template>
@@ -67,6 +103,7 @@ const editingWorkspace = ref<Workspace | null>(null);
 const formName = ref("");
 const formDescription = ref("");
 const formShowInGlobal = ref(true);
+const maxDescriptionLength = 60;
 
 function openModal(workspace?: Workspace) {
 	if (workspace) {
@@ -91,13 +128,13 @@ async function saveWorkspace() {
 			editingWorkspace.value.id,
 			formName.value.trim(),
 			formDescription.value.trim(),
-			formShowInGlobal.value
+			formShowInGlobal.value,
 		);
 	} else {
 		await workspaceStore.createWorkspace(
 			formName.value.trim(),
 			formDescription.value.trim(),
-			formShowInGlobal.value
+			formShowInGlobal.value,
 		);
 	}
 
