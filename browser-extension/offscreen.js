@@ -1,20 +1,24 @@
-// URL WebSocket ke aplikasi Tauri
-const WS_URL = "ws://127.0.0.1:48531";
+const PORTS = [14231, 14232, 14233, 14234, 14235];
+let currentPortIndex = 0;
 let socket = null;
-let reconnectInterval = null;
+let reconnectTimeout = null;
+let wasConnected = false;
 
-// Fungsi untuk menghubungkan WebSocket
 function connectWebSocket() {
 	if (socket && socket.readyState === WebSocket.OPEN) return;
 
-	console.log("[Workstation Dock] Connecting to Tauri App...");
-	socket = new WebSocket(WS_URL);
+	const port = PORTS[currentPortIndex];
+	const wsUrl = `ws://127.0.0.1:${port}`;
+	
+	console.log(`[Workstation Dock] Mencoba mengetuk port ${port}...`);
+	socket = new WebSocket(wsUrl);
 
 	socket.onopen = () => {
-		console.log("[Workstation Dock] Connected to Tauri!");
-		if (reconnectInterval) {
-			clearInterval(reconnectInterval);
-			reconnectInterval = null;
+		console.log(`[Workstation Dock] BINGO! Berhasil terhubung ke Tauri di port ${port}!`);
+		wasConnected = true;
+		if (reconnectTimeout) {
+			clearTimeout(reconnectTimeout);
+			reconnectTimeout = null;
 		}
 	};
 
@@ -25,9 +29,9 @@ function connectWebSocket() {
 
 			if (data.action === "open_or_focus" && data.url) {
 				chrome.runtime.sendMessage({
-          action: "open_or_focus",
-          url: data.url
-        });
+					action: "open_or_focus",
+					url: data.url
+				});
 			}
 		} catch (e) {
 			console.error("Failed processing JSON:", e);
@@ -35,23 +39,30 @@ function connectWebSocket() {
 	};
 
 	socket.onclose = () => {
-		console.log(
-			"[Workstation Dock] Connection lost. Trying in 3 seconds...",
-		);
 		socket = null;
-		scheduleReconnect();
+		
+		// Pindah ke target port berikutnya
+		currentPortIndex = (currentPortIndex + 1) % PORTS.length;
+		
+		// Jika tadinya nyambung lalu putus, tunggu 3 detik (kasih waktu Tauri restart)
+		// Jika tadinya memang belum nyambung (sedang sweeping), langsung gas 200ms
+		const delay = wasConnected ? 3000 : 200;
+		wasConnected = false;
+		
+		scheduleReconnect(delay);
 	};
 
 	socket.onerror = (err) => {
-		socket.close();
+		// Dibiarkan kosong, karena error akan otomatis memicu onclose
 	};
 }
 
-function scheduleReconnect() {
-	if (!reconnectInterval) {
-		reconnectInterval = setInterval(() => {
+function scheduleReconnect(delay) {
+	if (!reconnectTimeout) {
+		reconnectTimeout = setTimeout(() => {
+			reconnectTimeout = null;
 			connectWebSocket();
-		}, 3000);
+		}, delay);
 	}
 }
 
