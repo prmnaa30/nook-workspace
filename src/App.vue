@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
+import { useToast } from "@nuxt/ui/composables";
 import WorkspaceSidebar from "./components/workspace/WorkspaceSidebar.vue";
 import WorkspaceDetails from "./components/workspace/WorkspaceDetails.vue";
 import Dashboard from "./components/common/Dashboard.vue";
@@ -34,8 +35,15 @@ import FloatingCommandBar from "./components/floating/FloatingCommandBar.vue";
 import { useWorkspaceStore } from "./stores/workspaces";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
+import {
+	checkForUpdates,
+	notifyUpdateAvailable,
+	openReleasePage,
+	syncAutostartPreferenceOnBoot,
+} from "./services/update.service";
 
 const workspaceStore = useWorkspaceStore();
+const toast = useToast();
 
 const windowLabel = ref("main");
 const workspaceDetailsRef = ref<any>(null);
@@ -80,6 +88,9 @@ onMounted(async () => {
 	}
 
 	if (windowLabel.value === "main") {
+		// Sync autostart setting on boot (respects user's explicit disabled/enabled preference across updates)
+		syncAutostartPreferenceOnBoot();
+
 		listen<{ workspaceId: number; noteId: number }>("open-note", async (event) => {
 			const { workspaceId, noteId } = event.payload;
 
@@ -91,6 +102,30 @@ onMounted(async () => {
 				}
 			}, 100);
 		});
+
+		// Run 24h throttled automatic update check on startup
+		setTimeout(async () => {
+			try {
+				const res = await checkForUpdates(true);
+				if (res?.hasUpdate && res.latestVersion) {
+					await notifyUpdateAvailable(res.latestVersion);
+					toast.add({
+						title: `Nook v${res.latestVersion} Available!`,
+						description: "A new version of Nook is available on GitHub Releases.",
+						icon: "i-lucide-arrow-up-circle",
+						color: "primary",
+						actions: [
+							{
+								label: "View Release Page",
+								onClick: () => openReleasePage(res.releaseUrl),
+							},
+						],
+					});
+				}
+			} catch (e) {
+				console.warn("Automatic update check error:", e);
+			}
+		}, 2000);
 	}
 
 	await workspaceStore.getWorkspaces();

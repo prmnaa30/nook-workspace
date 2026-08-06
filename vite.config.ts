@@ -85,6 +85,9 @@ export default defineConfig(async () => ({
     },
   },
   optimizeDeps: {
+    esbuildOptions: {
+      target: "esnext"
+    },
     include: [
       '@tiptap/core',
       '@tiptap/vue-3',
@@ -94,6 +97,9 @@ export default defineConfig(async () => ({
       'prosemirror-view',
       'prosemirror-gapcursor'
     ]
+  },
+  esbuild: {
+    target: "esnext"
   },
   build: {
     target: "esnext"

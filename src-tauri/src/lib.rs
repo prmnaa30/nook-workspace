@@ -4,7 +4,7 @@ mod ws_server;
 
 use std::fs;
 use tauri::menu::{Menu, MenuItem};
-use tauri::tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Listener, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_sql::{Migration, MigrationKind};
@@ -43,6 +43,12 @@ pub fn run() {
             sql: include_str!("../migrations/05_add_is_pinned_flags.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 6,
+            description: "add app_settings table for system key-value storage",
+            sql: include_str!("../migrations/06_add_app_settings.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let (tx, _rx) = broadcast::channel::<String>(10);
@@ -54,6 +60,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--autostart"]),
+        ))
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:workstation.db", migrations)
@@ -130,6 +141,17 @@ pub fn run() {
                 });
             }
 
+            let args: Vec<String> = std::env::args().collect();
+            let is_autostart = args.iter().any(|arg| arg == "--autostart");
+
+            if !is_autostart {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.unminimize();
+                    let _ = main_window.show();
+                    let _ = main_window.set_focus();
+                }
+            }
+
             if let Ok(home_dir) = app.path().home_dir() {
                 let notes_dir = home_dir.join(".nook").join("notes");
                 if !notes_dir.exists() {
@@ -147,19 +169,17 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
-            match event {
-                tauri::WindowEvent::CloseRequested { api, .. } => {
-                    window.hide().unwrap();
-                    api.prevent_close();
-                }
-                tauri::WindowEvent::Focused(focused) => {
-                    if window.label() == "floating" && !focused {
-                        let _ = window.hide();
-                    }
-                }
-                _ => {}
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                window.hide().unwrap();
+                api.prevent_close();
             }
+            tauri::WindowEvent::Focused(focused) => {
+                if window.label() == "floating" && !focused {
+                    let _ = window.hide();
+                }
+            }
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             commands::greet,

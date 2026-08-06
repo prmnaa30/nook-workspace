@@ -125,14 +125,17 @@
 		<div
 			class="p-3 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-400"
 		>
-			<span class="font-mono text-[11px]">Alt + W (Dock)</span>
-			<UBadge
+			<UButton
 				color="neutral"
-				variant="subtle"
+				variant="ghost"
 				size="xs"
+				icon="i-lucide-settings"
+				class="cursor-pointer text-neutral-400 hover:text-neutral-200"
+				@click="openSettingsModal()"
 			>
-				v1.3.2
-			</UBadge>
+				Settings
+			</UButton>
+			<span class="font-mono text-[11px]">Alt + W (Dock)</span>
 		</div>
 
 		<!-- Workspace Modal -->
@@ -148,6 +151,9 @@
 			:target="workspaceToDelete?.name || ''"
 			@confirm="handleConfirmDelete"
 		/>
+
+		<!-- Settings Modal -->
+		<SettingsModal ref="settingsModalRef" />
 	</aside>
 </template>
 
@@ -158,12 +164,14 @@ import { useWorkspaceStore } from "../../stores/workspaces";
 import WorkspaceCard from "./WorkspaceCard.vue";
 import WorkspaceFormModal from "./WorkspaceFormModal.vue";
 import DeleteModal from "../common/DeleteModal.vue";
+import SettingsModal from "../common/SettingsModal.vue";
 import AppLogo from "../../assets/icons/icon.svg";
 
 const workspaceStore = useWorkspaceStore();
 
 const workspaceModalRef = ref<any>(null);
 const deleteModalRef = ref<any>(null);
+const settingsModalRef = ref<any>(null);
 const workspaceToDelete = ref<Workspace | null>(null);
 
 onMounted(() => {
@@ -172,6 +180,10 @@ onMounted(() => {
 
 function openWorkspaceModal(workspace?: Workspace) {
 	workspaceModalRef.value?.openModal(workspace);
+}
+
+function openSettingsModal() {
+	settingsModalRef.value?.openModal();
 }
 
 function triggerDeleteWorkspace(workspace: Workspace) {
