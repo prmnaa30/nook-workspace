@@ -17,6 +17,21 @@
 						size="md"
 					/>
 				</div>
+
+				<div class="flex items-center justify-between pt-2">
+					<div class="flex flex-col">
+						<span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200"
+							>Pin to Quick Access</span
+						>
+						<span class="text-[11px] text-neutral-400"
+							>Show directly in Floating Command Bar</span
+						>
+					</div>
+					<USwitch
+						v-model="formIsPinned"
+						color="primary"
+					/>
+				</div>
 			</form>
 		</template>
 
@@ -49,14 +64,17 @@ const noteStore = useNoteStore();
 const isOpen = ref(false);
 const editingNote = ref<Note | null>(null);
 const formTitle = ref("");
+const formIsPinned = ref(false);
 
 function openModal(note?: Note) {
 	if (note) {
 		editingNote.value = note;
 		formTitle.value = note.title;
+		formIsPinned.value = Boolean(note.is_pinned);
 	} else {
 		editingNote.value = null;
 		formTitle.value = "";
+		formIsPinned.value = false;
 	}
 	isOpen.value = true;
 }
@@ -68,12 +86,14 @@ async function saveNote() {
 		await noteStore.updateNote(
 			props.workspaceId,
 			editingNote.value.id,
-			formTitle.value.trim()
+			formTitle.value.trim(),
+			formIsPinned.value
 		);
 	} else {
 		await noteStore.createNote(
 			props.workspaceId,
-			formTitle.value.trim()
+			formTitle.value.trim(),
+			formIsPinned.value
 		);
 	}
 

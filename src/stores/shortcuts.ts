@@ -4,6 +4,7 @@ import {
 	createShortcutService,
 	deleteShortcutService,
 	updateShortcutService,
+	toggleShortcutPinService,
 	moveShortcutService,
 	getShortcutsService,
 	type Shortcut,
@@ -33,8 +34,9 @@ export const useShortcutStore = defineStore("shortcut", () => {
 		type: "web" | "folder" | "file",
 		path: string,
 		browserPath: string | null,
+		isPinned: boolean = false,
 	) {
-		await createShortcutService(workspaceId, title, type, path, browserPath);
+		await createShortcutService(workspaceId, title, type, path, browserPath, isPinned);
 
 		if (currentWorkspaceId.value === workspaceId) {
 			await getShortcuts(workspaceId);
@@ -49,13 +51,22 @@ export const useShortcutStore = defineStore("shortcut", () => {
 		type: "web" | "folder" | "file",
 		path: string,
 		browserPath: string | null,
+		isPinned?: boolean,
 	) {
-		await updateShortcutService(shortcutId, title, type, path, browserPath);
+		await updateShortcutService(shortcutId, title, type, path, browserPath, isPinned);
 
 		if (currentWorkspaceId.value === workspaceId) {
 			await getShortcuts(workspaceId);
 		}
 		await workspaceStore.getWorkspaces();
+	}
+
+	async function toggleShortcutPin(shortcutId: number, isPinned: boolean) {
+		await toggleShortcutPinService(shortcutId, isPinned);
+		if (currentWorkspaceId.value !== null) {
+			await getShortcuts(currentWorkspaceId.value);
+		}
+		await getAllShortcuts();
 	}
 
 	async function moveShortcut(shortcutId: number, targetWorkspaceId: number) {
@@ -84,6 +95,7 @@ export const useShortcutStore = defineStore("shortcut", () => {
 		getShortcuts,
 		createShortcut,
 		updateShortcut,
+		toggleShortcutPin,
 		moveShortcut,
 		deleteShortcut,
 	};

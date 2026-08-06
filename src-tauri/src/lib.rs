@@ -37,6 +37,12 @@ pub fn run() {
             sql: include_str!("../migrations/04_add_tasks_table.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "add is_pinned columns to notes and shortcuts",
+            sql: include_str!("../migrations/05_add_is_pinned_flags.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let (tx, _rx) = broadcast::channel::<String>(10);

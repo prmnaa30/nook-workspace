@@ -54,6 +54,21 @@
 						/>
 					</div>
 				</div>
+
+				<div class="flex items-center justify-between pt-2">
+					<div class="flex flex-col">
+						<span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200"
+							>Pin to Quick Access</span
+						>
+						<span class="text-[11px] text-neutral-400"
+							>Show directly in Floating Command Bar</span
+						>
+					</div>
+					<USwitch
+						v-model="formIsPinned"
+						color="primary"
+					/>
+				</div>
 			</form>
 		</template>
 
@@ -89,6 +104,7 @@ const editingShortcut = ref<Shortcut | null>(null);
 const formTitle = ref("");
 const formType = ref<"web" | "file" | "folder">("web");
 const formPath = ref("");
+const formIsPinned = ref(false);
 
 const typeOptions = [
 	{ label: "Web URL", value: "web" },
@@ -102,11 +118,13 @@ function openModal(shortcut?: Shortcut) {
 		formTitle.value = shortcut.title;
 		formType.value = shortcut.type;
 		formPath.value = shortcut.path;
+		formIsPinned.value = Boolean(shortcut.is_pinned);
 	} else {
 		editingShortcut.value = null;
 		formTitle.value = "";
 		formType.value = "web";
 		formPath.value = "";
+		formIsPinned.value = false;
 	}
 	isOpen.value = true;
 }
@@ -135,7 +153,8 @@ async function saveShortcut() {
 			formTitle.value.trim(),
 			formType.value,
 			formPath.value.trim(),
-			null
+			null,
+			formIsPinned.value
 		);
 	} else {
 		await shortcutStore.createShortcut(
@@ -143,7 +162,8 @@ async function saveShortcut() {
 			formTitle.value.trim(),
 			formType.value,
 			formPath.value.trim(),
-			null
+			null,
+			formIsPinned.value
 		);
 	}
 

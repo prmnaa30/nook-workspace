@@ -18,6 +18,9 @@
 						size="md"
 						class="w-full"
 						:disabled="!!editingTask"
+						:ui="{
+							content: 'z-60'
+						}"
 					/>
 				</div>
 
@@ -58,6 +61,9 @@
 							variant="outline"
 							size="md"
 							class="w-full"
+							:ui="{
+								content: 'z-60'
+							}"
 						/>
 					</div>
 

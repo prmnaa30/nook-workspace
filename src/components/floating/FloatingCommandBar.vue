@@ -160,7 +160,7 @@ const filteredItems = computed(() => {
 		);
 	}
 
-	return combined;
+	return combined.filter((item) => Boolean(item.is_pinned));
 });
 
 watch(searchQuery, () => {

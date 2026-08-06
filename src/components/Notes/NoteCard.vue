@@ -15,16 +15,29 @@
 						</span>
 					</div>
 
-					<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+					<div class="flex items-center gap-1 shrink-0">
 						<UButton
 							color="neutral"
 							variant="ghost"
 							size="xs"
-							icon="i-lucide-more-vertical"
-							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
-							@click.stop
+							:icon="note.is_pinned ? 'i-lucide-pin' : 'i-lucide-pin-off'"
+							:class="note.is_pinned ? 'text-amber-500 opacity-100' : 'opacity-0 group-hover:opacity-100 text-neutral-400'"
+							class="transition-opacity cursor-pointer"
+							:title="note.is_pinned ? 'Unpin from Quick Access' : 'Pin to Quick Access'"
+							@click.stop="$emit('toggle-pin')"
 						/>
-					</UDropdownMenu>
+
+						<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+							<UButton
+								color="neutral"
+								variant="ghost"
+								size="xs"
+								icon="i-lucide-more-vertical"
+								class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+								@click.stop
+							/>
+						</UDropdownMenu>
+					</div>
 				</div>
 
 				<p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate mt-1">
@@ -48,7 +61,7 @@ import { computed } from "vue";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import type { Note } from "../../services/notes.service";
 
-defineProps<{
+const props = defineProps<{
 	note: Note;
 }>();
 
@@ -57,6 +70,7 @@ const emit = defineEmits<{
 	(e: "edit"): void;
 	(e: "move"): void;
 	(e: "delete"): void;
+	(e: "toggle-pin"): void;
 }>();
 
 const menuItems = computed<DropdownMenuItem[][]>(() => [
@@ -65,6 +79,11 @@ const menuItems = computed<DropdownMenuItem[][]>(() => [
 			label: "Open Note",
 			icon: "i-lucide-book-open",
 			onSelect: () => emit("open"),
+		},
+		{
+			label: props.note.is_pinned ? "Unpin from Quick Access" : "Pin to Quick Access",
+			icon: props.note.is_pinned ? "i-lucide-pin-off" : "i-lucide-pin",
+			onSelect: () => emit("toggle-pin"),
 		},
 		{
 			label: "Rename Note",

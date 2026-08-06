@@ -33,6 +33,7 @@
 					@edit="openFormModal(shortcut)"
 					@move="triggerMoveShortcut(shortcut)"
 					@delete="triggerDeleteShortcut(shortcut)"
+					@toggle-pin="handleTogglePin(shortcut)"
 				/>
 			</div>
 		</div>
@@ -141,6 +142,10 @@ const shortcutToDelete = ref<Shortcut | null>(null);
 
 function openFormModal(shortcut?: Shortcut) {
 	formModalRef.value?.openModal(shortcut);
+}
+
+async function handleTogglePin(shortcut: Shortcut) {
+	await shortcutStore.toggleShortcutPin(shortcut.id, !shortcut.is_pinned);
 }
 
 function triggerMoveShortcut(shortcut: Shortcut) {

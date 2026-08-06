@@ -18,16 +18,29 @@
 						</span>
 					</div>
 
-					<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+					<div class="flex items-center gap-1 shrink-0">
 						<UButton
 							color="neutral"
 							variant="ghost"
 							size="xs"
-							icon="i-lucide-more-vertical"
-							class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
-							@click.stop
+							:icon="shortcut.is_pinned ? 'i-lucide-pin' : 'i-lucide-pin-off'"
+							:class="shortcut.is_pinned ? 'text-amber-500 opacity-100' : 'opacity-0 group-hover:opacity-100 text-neutral-400'"
+							class="transition-opacity cursor-pointer"
+							:title="shortcut.is_pinned ? 'Unpin from Quick Access' : 'Pin to Quick Access'"
+							@click.stop="$emit('toggle-pin')"
 						/>
-					</UDropdownMenu>
+
+						<UDropdownMenu :items="menuItems" :ui="{ content: 'min-w-36' }">
+							<UButton
+								color="neutral"
+								variant="ghost"
+								size="xs"
+								icon="i-lucide-more-vertical"
+								class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+								@click.stop
+							/>
+						</UDropdownMenu>
+					</div>
 				</div>
 
 				<p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate mt-1">
@@ -60,6 +73,7 @@ const emit = defineEmits<{
 	(e: "edit"): void;
 	(e: "move"): void;
 	(e: "delete"): void;
+	(e: "toggle-pin"): void;
 }>();
 
 const typeStyle = computed(() => {
@@ -103,6 +117,11 @@ const menuItems = computed<DropdownMenuItem[][]>(() => [
 			label: "Run Shortcut",
 			icon: "i-lucide-play",
 			onSelect: () => execute(),
+		},
+		{
+			label: props.shortcut.is_pinned ? "Unpin from Quick Access" : "Pin to Quick Access",
+			icon: props.shortcut.is_pinned ? "i-lucide-pin-off" : "i-lucide-pin",
+			onSelect: () => emit("toggle-pin"),
 		},
 		{
 			label: "Edit Shortcut",

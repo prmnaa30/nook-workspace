@@ -8,6 +8,7 @@ import {
 	searchAllNotesService,
 	SearchNote,
 	updateNoteService,
+	toggleNotePinService,
 	updateNoteTimestampService,
 	type Note,
 } from "../services/notes.service";
@@ -42,7 +43,7 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 	}
 
-	async function createNote(workspaceId: number, title: string) {
+	async function createNote(workspaceId: number, title: string, isPinned: boolean = false) {
 		const cleanTitle = title.trim();
 		if (!cleanTitle) return;
 
@@ -50,7 +51,7 @@ export const useNoteStore = defineStore("notes", () => {
 		const filename = `${Date.now()}_${sanitized || "untitled-note"}.md`;
 
 		try {
-			await createNoteService(workspaceId, cleanTitle, filename);
+			await createNoteService(workspaceId, cleanTitle, filename, isPinned);
 
 			await invoke("write_note", {
 				workspaceId,
@@ -74,6 +75,7 @@ export const useNoteStore = defineStore("notes", () => {
 		workspaceId: number,
 		noteId: number,
 		newTitle: string,
+		isPinned?: boolean,
 	) {
 		const cleanTitle = newTitle.trim();
 		if (!cleanTitle) return;
@@ -95,7 +97,7 @@ export const useNoteStore = defineStore("notes", () => {
 				});
 			}
 
-			await updateNoteService(noteId, cleanTitle, newFilename);
+			await updateNoteService(noteId, cleanTitle, newFilename, isPinned);
 
 			await getNotes(workspaceId);
 			await workspaceStore.getWorkspaces();
@@ -107,6 +109,12 @@ export const useNoteStore = defineStore("notes", () => {
 		} catch (error) {
 			console.error("Failed to rename note:", error);
 		}
+	}
+
+	async function toggleNotePin(workspaceId: number, noteId: number, isPinned: boolean) {
+		await toggleNotePinService(noteId, isPinned);
+		await getNotes(workspaceId);
+		await getAllNotes();
 	}
 
 	async function moveNote(
@@ -197,6 +205,7 @@ export const useNoteStore = defineStore("notes", () => {
 		getNotes,
 		createNote,
 		updateNote,
+		toggleNotePin,
 		moveNote,
 		touchNote,
 		deleteNote,

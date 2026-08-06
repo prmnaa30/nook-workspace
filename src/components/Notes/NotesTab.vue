@@ -45,6 +45,7 @@
 						@edit="openFormModal(note)"
 						@move="triggerMoveNote(note)"
 						@delete="triggerDeleteNote(note)"
+						@toggle-pin="handleTogglePin(note)"
 					/>
 				</div>
 			</div>
@@ -163,6 +164,10 @@ watch(() => props.workspaceId, (newId) => {
 
 function refreshNotes() {
 	noteStore.getNotes(props.workspaceId);
+}
+
+async function handleTogglePin(note: Note) {
+	await noteStore.toggleNotePin(props.workspaceId, note.id, !note.is_pinned);
 }
 
 async function openNoteEditor(note: Note) {
