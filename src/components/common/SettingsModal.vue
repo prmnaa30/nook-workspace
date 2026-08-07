@@ -9,20 +9,34 @@
 			<div class="flex flex-col gap-6 py-2">
 				<!-- General Settings Section -->
 				<div class="flex flex-col gap-4">
-					<h3 class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+					<h3 class="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-1">
 						System Preferences
 					</h3>
 
-					<div class="flex items-center justify-between p-3 rounded-xl bg-neutral-900 border border-neutral-800">
-						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium text-neutral-200">Launch at startup</span>
-							<span class="text-xs text-neutral-400">Automatically start Nook when Windows starts</span>
+					<div class="flex flex-col rounded-xl bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800">
+						<div class="flex items-center justify-between p-3.5">
+							<div class="flex flex-col gap-0.5">
+								<span class="text-sm font-medium text-neutral-200">Launch at startup</span>
+								<span class="text-xs text-neutral-400">Automatically start Nook when Windows starts</span>
+							</div>
+							<USwitch
+								v-model="autostartEnabled"
+								:loading="isAutostartLoading"
+								@update:model-value="handleAutostartToggle"
+							/>
 						</div>
-						<USwitch
-							v-model="autostartEnabled"
-							:loading="isAutostartLoading"
-							@update:model-value="handleAutostartToggle"
-						/>
+
+						<div class="flex items-center justify-between p-3.5">
+							<div class="flex flex-col gap-0.5">
+								<span class="text-sm font-medium text-neutral-200">Show agenda on startup</span>
+								<span class="text-xs text-neutral-400">Show task summary notification when Nook starts</span>
+							</div>
+							<USwitch
+								v-model="startupNotificationEnabled"
+								:loading="isStartupNotificationLoading"
+								@update:model-value="handleStartupNotificationToggle"
+							/>
+						</div>
 					</div>
 				</div>
 
@@ -80,6 +94,7 @@ import {
 	checkForUpdates,
 	notifyUpdateAvailable,
 	openReleasePage,
+	getAppSetting,
 	setAppSetting,
 } from "../../services/update.service";
 
@@ -87,6 +102,8 @@ const isOpen = ref(false);
 const appVersion = ref("1.3.2");
 const autostartEnabled = ref(false);
 const isAutostartLoading = ref(false);
+const startupNotificationEnabled = ref(true);
+const isStartupNotificationLoading = ref(false);
 const isCheckingUpdate = ref(false);
 const toast = useToast();
 
@@ -104,6 +121,16 @@ async function loadSettings() {
 		console.warn("Could not check autostart status:", e);
 	} finally {
 		isAutostartLoading.value = false;
+	}
+
+	try {
+		isStartupNotificationLoading.value = true;
+		const pref = await getAppSetting("startup_notification_enabled");
+		startupNotificationEnabled.value = pref !== "disabled";
+	} catch (e) {
+		console.warn("Could not check startup notification preference:", e);
+	} finally {
+		isStartupNotificationLoading.value = false;
 	}
 }
 
@@ -129,6 +156,18 @@ async function handleAutostartToggle(val: boolean) {
 		autostartEnabled.value = !val;
 	} finally {
 		isAutostartLoading.value = false;
+	}
+}
+
+async function handleStartupNotificationToggle(val: boolean) {
+	try {
+		isStartupNotificationLoading.value = true;
+		await setAppSetting("startup_notification_enabled", val ? "enabled" : "disabled");
+	} catch (e) {
+		console.error("Failed to update startup notification setting:", e);
+		startupNotificationEnabled.value = !val;
+	} finally {
+		isStartupNotificationLoading.value = false;
 	}
 }
 

@@ -40,7 +40,15 @@ import {
 	notifyUpdateAvailable,
 	openReleasePage,
 	syncAutostartPreferenceOnBoot,
+	getAppSetting,
 } from "./services/update.service";
+import {
+	checkNotificationPermission,
+	requestNotificationPermission,
+	registerNotificationClickListener,
+	getStartupTaskSummary,
+	sendStartupNativeNotification,
+} from "./services/notification.service";
 
 const workspaceStore = useWorkspaceStore();
 const toast = useToast();
@@ -102,6 +110,62 @@ onMounted(async () => {
 				}
 			}, 100);
 		});
+
+		// Register notification click listener
+		registerNotificationClickListener();
+
+		// Startup agenda notification check
+		setTimeout(async () => {
+			try {
+				const pref = await getAppSetting("startup_notification_enabled");
+				if (pref === "disabled") {
+					return;
+				}
+
+				const currentWindow = getCurrentWindow();
+				const isVisible = await currentWindow.isVisible();
+
+				let permissionGranted = await checkNotificationPermission();
+
+				// If window is visible (manual launch) and permission not granted, request permission
+				if (isVisible && !permissionGranted) {
+					permissionGranted = await requestNotificationPermission();
+				}
+
+				const summary = await getStartupTaskSummary();
+
+				// Send native OS notification if permission is granted
+				if (permissionGranted) {
+					sendStartupNativeNotification(summary);
+				}
+
+				// Display in-app toast if window is visible
+				if (isVisible) {
+					const toastDescription =
+						summary.totalTasksRemaining === 0
+							? "You are all caught up! Have a great day!"
+							: `You have ${summary.tasksDueToday} tasks due today out of ${summary.totalTasksRemaining} total tasks.`;
+
+					toast.add({
+						title: "Today's Agenda",
+						description: toastDescription,
+						icon: "i-lucide-bell",
+						color: summary.tasksDueToday > 0 ? "warning" : "primary",
+						actions:
+							summary.totalTasksRemaining > 0
+								? [
+										{
+											label: "View Tasks",
+											onClick: () => workspaceStore.selectView("global-tasks"),
+										},
+								  ]
+								: [],
+					});
+				}
+			} catch (e) {
+				console.warn("Startup notification check error:", e);
+			}
+		}, 1000);
 
 		// Run 24h throttled automatic update check on startup
 		setTimeout(async () => {
