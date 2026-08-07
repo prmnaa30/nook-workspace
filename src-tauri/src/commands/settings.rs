@@ -100,3 +100,37 @@ pub async fn show_startup_agenda(
         total_tasks_remaining: total_remaining,
     })
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn show_update_notification(
+    app: AppHandle,
+    version: String,
+    url: String,
+) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let target_url = url.clone();
+        let app_handle = app.clone();
+        let _ = Toast::new("com.nook")
+            .title("Nook Update Available")
+            .text1(&format!(
+                "Version {} is now available on GitHub! Click to view release.",
+                version
+            ))
+            .duration(Duration::Short)
+            .on_activated(move || {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                let _ = tauri_plugin_opener::open_url(&target_url, None::<&str>);
+                Ok(())
+            })
+            .show();
+    }
+
+    Ok(())
+}
+

@@ -56,16 +56,43 @@
 								<span class="text-xs font-mono text-neutral-400">v{{ appVersion }}</span>
 							</div>
 						</div>
-						<UButton
-							color="neutral"
-							variant="soft"
-							size="xs"
-							icon="i-lucide-refresh-cw"
-							:loading="isCheckingUpdate"
-							@click="handleCheckUpdate"
-						>
-							Check for updates
-						</UButton>
+						<div class="flex items-center gap-2">
+							<span
+								v-if="updateStatus.type === 'up-to-date'"
+								class="text-xs text-emerald-400 flex items-center gap-1 font-medium"
+							>
+								<UIcon name="i-lucide-check-circle" class="size-3.5" />
+								Up to date
+							</span>
+							<span
+								v-else-if="updateStatus.type === 'error'"
+								class="text-xs text-rose-400 flex items-center gap-1 font-medium"
+							>
+								<UIcon name="i-lucide-alert-circle" class="size-3.5" />
+								Check failed
+							</span>
+							<UButton
+								v-if="updateStatus.type === 'has-update'"
+								color="primary"
+								variant="solid"
+								size="xs"
+								icon="i-lucide-external-link"
+								@click="openReleasePage(updateStatus.url)"
+							>
+								{{ updateStatus.text }}
+							</UButton>
+							<UButton
+								v-else
+								color="neutral"
+								variant="soft"
+								size="xs"
+								icon="i-lucide-refresh-cw"
+								:loading="isCheckingUpdate"
+								@click="handleCheckUpdate"
+							>
+								Check for updates
+							</UButton>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -87,28 +114,32 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { useToast } from "@nuxt/ui/composables";
-import { getVersion } from "@tauri-apps/api/app";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { getAppVersion } from "../../services/app-version";
 import {
 	checkForUpdates,
+	notifyUpdateAvailable,
 	openReleasePage,
 	getAppSetting,
 	setAppSetting,
 } from "../../services/update.service";
 
 const isOpen = ref(false);
-const appVersion = ref("1.3.2");
+const appVersion = ref("");
 const autostartEnabled = ref(false);
 const isAutostartLoading = ref(false);
 const startupNotificationEnabled = ref(true);
 const isStartupNotificationLoading = ref(false);
 const isCheckingUpdate = ref(false);
-const toast = useToast();
+const updateStatus = ref<{
+	type: "up-to-date" | "has-update" | "error" | null;
+	text: string;
+	url?: string;
+}>({ type: null, text: "" });
 
 async function loadSettings() {
 	try {
-		appVersion.value = await getVersion();
+		appVersion.value = await getAppVersion();
 	} catch (e) {
 		console.warn("Could not fetch app version:", e);
 	}
@@ -151,7 +182,6 @@ async function handleAutostartToggle(val: boolean) {
 		}
 	} catch (e) {
 		console.error("Failed to update autostart setting:", e);
-		// Revert value on error
 		autostartEnabled.value = !val;
 	} finally {
 		isAutostartLoading.value = false;
@@ -172,43 +202,32 @@ async function handleStartupNotificationToggle(val: boolean) {
 
 async function handleCheckUpdate() {
 	isCheckingUpdate.value = true;
+	updateStatus.value = { type: null, text: "" };
 	try {
 		const res = await checkForUpdates(false);
 		if (res?.hasUpdate && res.latestVersion) {
-			toast.add({
-				title: `New Update Available (${res.latestVersion})`,
-				description: `A newer version of Nook is available on GitHub Releases.`,
-				icon: "i-lucide-arrow-up-circle",
-				color: "primary",
-				actions: [
-					{
-						label: "Open Release Page",
-						onClick: () => openReleasePage(res.releaseUrl),
-					},
-				],
-			});
+			updateStatus.value = {
+				type: "has-update",
+				text: `Get ${res.latestVersion}`,
+				url: res.releaseUrl,
+			};
+			await notifyUpdateAvailable(res.latestVersion, res.releaseUrl);
 		} else if (res?.error) {
-			toast.add({
-				title: "Update Check Failed",
-				description: res.error,
-				icon: "i-lucide-alert-circle",
-				color: "error",
-			});
+			updateStatus.value = {
+				type: "error",
+				text: res.error,
+			};
 		} else {
-			toast.add({
-				title: "Up to Date",
-				description: `You are running the latest version of Nook (v${appVersion.value}).`,
-				icon: "i-lucide-check-circle",
-				color: "success",
-			});
+			updateStatus.value = {
+				type: "up-to-date",
+				text: `v${appVersion.value} is up to date`,
+			};
 		}
 	} catch (e: any) {
-		toast.add({
-			title: "Error",
-			description: e?.message || "Failed to check for updates",
-			icon: "i-lucide-alert-circle",
-			color: "error",
-		});
+		updateStatus.value = {
+			type: "error",
+			text: e?.message || "Failed to check for updates",
+		};
 	} finally {
 		isCheckingUpdate.value = false;
 	}

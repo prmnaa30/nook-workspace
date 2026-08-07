@@ -1,6 +1,6 @@
-import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { commands } from "../bindings";
+import { getAppVersion } from "./app-version";
 
 const GITHUB_RELEASES_API = "https://api.github.com/repos/prmnaa30/nook-workspace/releases/latest";
 const GITHUB_RELEASES_PAGE = "https://github.com/prmnaa30/nook-workspace/releases";
@@ -46,12 +46,7 @@ export function isNewerVersion(latest: string, current: string): boolean {
 }
 
 export async function checkForUpdates(isAutoCheck = false): Promise<UpdateCheckResult | null> {
-	let currentVersion = "1.4.0";
-	try {
-		currentVersion = await getVersion();
-	} catch (e) {
-		console.warn("Could not fetch app version from Tauri:", e);
-	}
+	let currentVersion = await getAppVersion();
 
 	if (isAutoCheck) {
 		const lastCheck = await getAppSetting("last_update_check_at");
@@ -116,6 +111,16 @@ export async function openReleasePage(url?: string) {
 	}
 }
 
+export async function notifyUpdateAvailable(latestVersion: string, releaseUrl?: string) {
+	const url = releaseUrl || GITHUB_RELEASES_PAGE;
+	try {
+		await commands.showUpdateNotification(latestVersion, url);
+	} catch (e) {
+		console.warn("Could not show OS update notification:", e);
+	}
+}
+
 export async function syncAutostartPreferenceOnBoot() {
 	// Handled on boot directly in Rust backend
 }
+

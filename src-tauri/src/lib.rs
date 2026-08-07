@@ -103,6 +103,7 @@ pub fn run() {
         commands::get_app_setting,
         commands::set_app_setting,
         commands::show_startup_agenda,
+        commands::show_update_notification,
     ]);
 
     #[cfg(debug_assertions)]
