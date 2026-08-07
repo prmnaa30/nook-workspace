@@ -1,13 +1,17 @@
 mod commands;
-mod notes;
+mod db;
+mod models;
 mod ws_server;
 
+#[cfg(debug_assertions)]
+use specta_typescript::Typescript;
 use std::fs;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Listener, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_sql::{Migration, MigrationKind};
+use tauri_specta::collect_commands;
 use tokio::sync::broadcast;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -57,10 +61,61 @@ pub fn run() {
 
     ws_server::spawn_server(tx_server);
 
+    let builder = tauri_specta::Builder::<tauri::Wry>::new().commands(collect_commands![
+        commands::greet,
+        commands::execute_shortcut,
+        commands::open_main_window,
+        commands::resize_floating_window,
+        commands::get_workspaces,
+        commands::create_workspace,
+        commands::update_workspace,
+        commands::delete_workspace,
+        commands::toggle_workspace_favorite,
+        commands::toggle_workspace_global_visibility,
+        commands::get_shortcuts,
+        commands::search_all_shortcuts,
+        commands::create_shortcut,
+        commands::update_shortcut,
+        commands::toggle_shortcut_pin,
+        commands::move_shortcut,
+        commands::delete_shortcut,
+        commands::get_notes,
+        commands::search_all_notes,
+        commands::create_note,
+        commands::update_note,
+        commands::toggle_note_pin,
+        commands::update_note_timestamp,
+        commands::move_note,
+        commands::delete_note,
+        commands::check_note_file_exists,
+        commands::read_note,
+        commands::write_note,
+        commands::rename_note_file,
+        commands::delete_note_file,
+        commands::move_note_file,
+        commands::get_tasks_by_workspace,
+        commands::get_all_global_tasks,
+        commands::get_all_tasks_for_timeline,
+        commands::create_task,
+        commands::update_task_status,
+        commands::update_task,
+        commands::delete_task,
+        commands::get_app_setting,
+        commands::set_app_setting,
+        commands::show_startup_agenda,
+    ]);
+
+    #[cfg(debug_assertions)]
+    builder
+        .export(
+            Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+            "../src/bindings.ts",
+        )
+        .expect("Failed to export specta bindings");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
@@ -93,7 +148,57 @@ pub fn run() {
         .manage(ws_server::AppState {
             ws_sender: tx_state,
         })
-        .setup(|app| {
+        .setup(move |app| {
+            // Setup SQLite pool for Rust backend
+            let app_config = app
+                .path()
+                .app_config_dir()
+                .expect("Failed to get app config dir");
+            if !app_config.exists() {
+                let _ = fs::create_dir_all(&app_config);
+            }
+            let db_path = app_config.join("workstation.db");
+            let db_url = format!("sqlite:{}?mode=rwc", db_path.to_string_lossy());
+
+            let pool = tauri::async_runtime::block_on(async {
+                sqlx::SqlitePool::connect(&db_url).await
+            })
+            .expect("Failed to connect to SQLite database");
+            app.manage(db::DbState { pool: pool.clone() });
+
+            // Sync autostart preference on boot in Rust
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let row = sqlx::query_scalar::<_, String>(
+                    "SELECT value FROM app_settings WHERE key = 'autostart_preference'",
+                )
+                .fetch_optional(&pool)
+                .await
+                .ok()
+                .flatten();
+
+                let preference = row.unwrap_or_else(|| "enabled".to_string());
+                use tauri_plugin_autostart::ManagerExt;
+                let autostart_manager = app_handle.autolaunch();
+
+                if preference == "disabled" {
+                    if let Ok(true) = autostart_manager.is_enabled() {
+                        let _ = autostart_manager.disable();
+                    }
+                } else {
+                    if let Ok(false) = autostart_manager.is_enabled() {
+                        let _ = autostart_manager.enable();
+                    }
+                    if preference != "enabled" {
+                        let _ = sqlx::query(
+                            "INSERT INTO app_settings (key, value, updated_at) VALUES ('autostart_preference', 'enabled', CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = 'enabled', updated_at = CURRENT_TIMESTAMP",
+                        )
+                        .execute(&pool)
+                        .await;
+                    }
+                }
+            });
+
             let show_i = MenuItem::with_id(app, "show", "Open Dashboard", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit Dock", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
@@ -181,18 +286,8 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![
-            commands::greet,
-            commands::execute_shortcut,
-            commands::open_main_window,
-            commands::resize_floating_window,
-            notes::read_note,
-            notes::write_note,
-            notes::rename_note_file,
-            notes::delete_note_file,
-            notes::check_note_file_exists,
-            notes::move_note_file
-        ])
+        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }
+

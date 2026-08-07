@@ -1,84 +1,4 @@
-import {
-	isPermissionGranted,
-	requestPermission,
-	sendNotification as sendTauriNotification,
-	onAction,
-} from "@tauri-apps/plugin-notification";
-import type { PluginListener } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useWorkspaceStore } from "../stores/workspaces";
-import { Task, getAllGlobalTasksService } from "./tasks.service";
-
-let actionListener: PluginListener | null = null;
-
-/**
- * Checks if native notification permissions are granted.
- */
-export async function checkNotificationPermission(): Promise<boolean> {
-	try {
-		return await isPermissionGranted();
-	} catch (error) {
-		console.warn("Failed to check notification permission:", error);
-		return false;
-	}
-}
-
-/**
- * Requests native notification permission from the user.
- */
-export async function requestNotificationPermission(): Promise<boolean> {
-	try {
-		const granted = await isPermissionGranted();
-		if (granted) return true;
-		const permission = await requestPermission();
-		return permission === "granted";
-	} catch (error) {
-		console.warn("Failed to request notification permission:", error);
-		return false;
-	}
-}
-
-/**
- * Registers click listener on notifications to focus Nook and open All Tasks view.
- */
-export async function registerNotificationClickListener(): Promise<void> {
-	if (actionListener) return;
-	try {
-		actionListener = await onAction(async () => {
-			try {
-				const currentWindow = getCurrentWindow();
-				if (currentWindow.label === "main") {
-					await currentWindow.unminimize();
-					await currentWindow.show();
-					await currentWindow.setFocus();
-
-					const workspaceStore = useWorkspaceStore();
-					workspaceStore.selectView("global-tasks");
-				}
-			} catch (e) {
-				console.warn("Error handling notification click focus:", e);
-			}
-		});
-	} catch (error) {
-		console.warn("Failed to register notification click listener:", error);
-	}
-}
-
-/**
- * Checks if a task is due today in the client's local timezone.
- */
-export function isTaskDueToday(dueDateStr?: string): boolean {
-	if (!dueDateStr) return false;
-	const due = new Date(dueDateStr);
-	if (isNaN(due.getTime())) return false;
-
-	const now = new Date();
-	return (
-		due.getFullYear() === now.getFullYear() &&
-		due.getMonth() === now.getMonth() &&
-		due.getDate() === now.getDate()
-	);
-}
+import { commands } from "../bindings";
 
 export interface TaskSummary {
 	tasksDueToday: number;
@@ -86,20 +6,25 @@ export interface TaskSummary {
 }
 
 /**
- * Computes task statistics: tasks due today and total remaining tasks.
+ * Invokes Rust backend to process startup agenda, trigger Windows native notification,
+ * and return task summary for in-app Vue toast.
  */
 export async function getStartupTaskSummary(): Promise<TaskSummary> {
 	try {
-		const tasks: Task[] = await getAllGlobalTasksService();
-		const remainingTasks = tasks.filter((t) => t.status !== "DONE");
-		const tasksDueToday = remainingTasks.filter((t) => isTaskDueToday(t.due_date));
+		const now = new Date();
+		const year = now.getFullYear();
+		const month = String(now.getMonth() + 1).padStart(2, "0");
+		const day = String(now.getDate()).padStart(2, "0");
+		const todayStr = `${year}-${month}-${day}`;
 
+		const raw = await commands.showStartupAgenda(todayStr);
+		const res = (raw as any).data ?? raw;
 		return {
-			tasksDueToday: tasksDueToday.length,
-			totalTasksRemaining: remainingTasks.length,
+			tasksDueToday: res.tasks_due_today ?? res.tasksDueToday ?? 0,
+			totalTasksRemaining: res.total_tasks_remaining ?? res.totalTasksRemaining ?? 0,
 		};
 	} catch (error) {
-		console.error("Failed to compute task summary:", error);
+		console.error("Failed to fetch startup task summary from Rust backend:", error);
 		return {
 			tasksDueToday: 0,
 			totalTasksRemaining: 0,
@@ -107,23 +32,18 @@ export async function getStartupTaskSummary(): Promise<TaskSummary> {
 	}
 }
 
-/**
- * Sends a native OS notification with the startup summary.
- */
-export function sendStartupNativeNotification(summary: TaskSummary): void {
-	try {
-		let bodyText = "";
-		if (summary.totalTasksRemaining === 0) {
-			bodyText = "You are all caught up! Have a great day!";
-		} else {
-			bodyText = `You have ${summary.tasksDueToday} tasks due today out of ${summary.totalTasksRemaining} total tasks.`;
-		}
+export async function checkNotificationPermission(): Promise<boolean> {
+	return true;
+}
 
-		sendTauriNotification({
-			title: "Nook Agenda",
-			body: bodyText,
-		});
-	} catch (error) {
-		console.warn("Failed to send native notification:", error);
-	}
+export async function requestNotificationPermission(): Promise<boolean> {
+	return true;
+}
+
+export async function registerNotificationClickListener(): Promise<void> {
+	// Handled natively
+}
+
+export function sendStartupNativeNotification(_summary: TaskSummary): void {
+	// Native Windows notification sent directly in Rust via winrt-notification
 }

@@ -1,33 +1,16 @@
-import { dbPromise } from "./db";
+import { commands, Note as NoteType, NoteWithWorkspace } from "../bindings";
 
-export interface Note {
-	id: number;
-	workspace_id: number;
-	title: string;
-	filename: string;
-	is_pinned: number;
-}
-
-export interface SearchNote extends Note {
-	workspace_name: string;
-}
+export type Note = NoteType;
+export type SearchNote = NoteWithWorkspace;
 
 export async function searchAllNotesService(): Promise<SearchNote[]> {
-	const db = await dbPromise;
-	return db.select(`
-		SELECT n.*, w.name as workspace_name 
-		FROM notes n 
-		JOIN workspaces w ON n.workspace_id = w.id 
-		ORDER BY n.title ASC
-	`);
+	const res = await commands.searchAllNotes();
+	return ((res as any).data ?? res) as SearchNote[];
 }
 
 export async function getNotesService(workspaceId: number): Promise<Note[]> {
-	const db = await dbPromise;
-	return db.select(
-		"SELECT * FROM notes WHERE workspace_id = $1 ORDER BY id DESC",
-		[workspaceId],
-	);
+	const res = await commands.getNotes(workspaceId);
+	return ((res as any).data ?? res) as Note[];
 }
 
 export async function createNoteService(
@@ -36,11 +19,7 @@ export async function createNoteService(
 	filename: string,
 	isPinned: boolean = false,
 ): Promise<void> {
-	const db = await dbPromise;
-	await db.execute(
-		"INSERT INTO notes (workspace_id, title, filename, is_pinned) VALUES ($1, $2, $3, $4)",
-		[workspaceId, title, filename, isPinned ? 1 : 0],
-	);
+	await commands.createNote(workspaceId, title, filename, isPinned);
 }
 
 export async function updateNoteService(
@@ -48,53 +27,25 @@ export async function updateNoteService(
 	title: string,
 	filename: string,
 	isPinned?: boolean,
-) {
-	const db = await dbPromise;
-	if (isPinned !== undefined) {
-		await db.execute(
-			"UPDATE notes SET title = $1, filename = $2, is_pinned = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4",
-			[title, filename, isPinned ? 1 : 0, noteId],
-		);
-	} else {
-		await db.execute(
-			"UPDATE notes SET title = $1, filename = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
-			[title, filename, noteId],
-		);
-	}
+): Promise<void> {
+	await commands.updateNote(noteId, title, filename, isPinned ?? null);
 }
 
-export async function toggleNotePinService(noteId: number, isPinned: boolean) {
-	const db = await dbPromise;
-	await db.execute(
-		"UPDATE notes SET is_pinned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-		[isPinned ? 1 : 0, noteId],
-	);
+export async function toggleNotePinService(noteId: number, isPinned: boolean): Promise<void> {
+	await commands.toggleNotePin(noteId, isPinned);
 }
 
-export async function updateNoteTimestampService(noteId: number) {
-	const db = await dbPromise;
-	await db.execute(
-		"UPDATE notes SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-		[noteId],
-	);
+export async function updateNoteTimestampService(noteId: number): Promise<void> {
+	await commands.updateNoteTimestamp(noteId);
 }
 
 export async function moveNoteService(
 	noteId: number,
 	targetWorkspaceId: number,
-) {
-	const db = await dbPromise;
-	await db.execute(
-		"UPDATE notes SET workspace_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-		[targetWorkspaceId, noteId],
-	);
-	await db.execute(
-		"UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-		[targetWorkspaceId],
-	);
+): Promise<void> {
+	await commands.moveNote(noteId, targetWorkspaceId);
 }
 
-export async function deleteNoteService(noteId: number) {
-	const db = await dbPromise;
-	await db.execute("DELETE FROM notes WHERE id = $1", [noteId]);
+export async function deleteNoteService(noteId: number): Promise<void> {
+	await commands.deleteNote(noteId);
 }

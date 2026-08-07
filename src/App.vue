@@ -37,17 +37,11 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import {
 	checkForUpdates,
-	notifyUpdateAvailable,
 	openReleasePage,
-	syncAutostartPreferenceOnBoot,
 	getAppSetting,
 } from "./services/update.service";
 import {
-	checkNotificationPermission,
-	requestNotificationPermission,
-	registerNotificationClickListener,
 	getStartupTaskSummary,
-	sendStartupNativeNotification,
 } from "./services/notification.service";
 
 const workspaceStore = useWorkspaceStore();
@@ -96,9 +90,6 @@ onMounted(async () => {
 	}
 
 	if (windowLabel.value === "main") {
-		// Sync autostart setting on boot (respects user's explicit disabled/enabled preference across updates)
-		syncAutostartPreferenceOnBoot();
-
 		listen<{ workspaceId: number; noteId: number }>("open-note", async (event) => {
 			const { workspaceId, noteId } = event.payload;
 
@@ -111,10 +102,13 @@ onMounted(async () => {
 			}, 100);
 		});
 
-		// Register notification click listener
-		registerNotificationClickListener();
+		listen<string>("navigate-view", (event) => {
+			if (event.payload === "global-tasks") {
+				workspaceStore.selectView("global-tasks");
+			}
+		});
 
-		// Startup agenda notification check
+		// Startup agenda notification check (native OS notification via Rust backend)
 		setTimeout(async () => {
 			try {
 				const pref = await getAppSetting("startup_notification_enabled");
@@ -122,46 +116,7 @@ onMounted(async () => {
 					return;
 				}
 
-				const currentWindow = getCurrentWindow();
-				const isVisible = await currentWindow.isVisible();
-
-				let permissionGranted = await checkNotificationPermission();
-
-				// If window is visible (manual launch) and permission not granted, request permission
-				if (isVisible && !permissionGranted) {
-					permissionGranted = await requestNotificationPermission();
-				}
-
-				const summary = await getStartupTaskSummary();
-
-				// Send native OS notification if permission is granted
-				if (permissionGranted) {
-					sendStartupNativeNotification(summary);
-				}
-
-				// Display in-app toast if window is visible
-				if (isVisible) {
-					const toastDescription =
-						summary.totalTasksRemaining === 0
-							? "You are all caught up! Have a great day!"
-							: `You have ${summary.tasksDueToday} tasks due today out of ${summary.totalTasksRemaining} total tasks.`;
-
-					toast.add({
-						title: "Today's Agenda",
-						description: toastDescription,
-						icon: "i-lucide-bell",
-						color: summary.tasksDueToday > 0 ? "warning" : "primary",
-						actions:
-							summary.totalTasksRemaining > 0
-								? [
-										{
-											label: "View Tasks",
-											onClick: () => workspaceStore.selectView("global-tasks"),
-										},
-								  ]
-								: [],
-					});
-				}
+				await getStartupTaskSummary();
 			} catch (e) {
 				console.warn("Startup notification check error:", e);
 			}
@@ -172,7 +127,6 @@ onMounted(async () => {
 			try {
 				const res = await checkForUpdates(true);
 				if (res?.hasUpdate && res.latestVersion) {
-					await notifyUpdateAvailable(res.latestVersion);
 					toast.add({
 						title: `Nook v${res.latestVersion} Available!`,
 						description: "A new version of Nook is available on GitHub Releases.",

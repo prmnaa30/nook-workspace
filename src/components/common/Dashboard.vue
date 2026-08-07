@@ -146,7 +146,8 @@ const upcomingDeadlinesCount = computed(() => {
 	return taskStore.timelineTasks.filter((t) => t.status !== "DONE").length;
 });
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string | null) {
+	if (!dateStr) return "";
 	const d = new Date(dateStr);
 	if (isNaN(d.getTime())) return dateStr;
 	return d.toLocaleDateString(undefined, {

@@ -7,11 +7,13 @@ use windows_sys::Win32::Foundation::{BOOL, HWND, LPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetWindowTextW, IsIconic, SetForegroundWindow, ShowWindow, SW_RESTORE, SW_SHOW,
 };
+
 #[cfg(target_os = "windows")]
 struct BrowserSearchState {
     targets: Vec<String>,
     found_hwnd: Option<HWND>,
 }
+
 #[cfg(target_os = "windows")]
 unsafe extern "system" fn enum_browser_window_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
     let state = &mut *(lparam as *mut BrowserSearchState);
@@ -29,6 +31,7 @@ unsafe extern "system" fn enum_browser_window_callback(hwnd: HWND, lparam: LPARA
     }
     1
 }
+
 #[cfg(target_os = "windows")]
 fn focus_browser_window(browser_path: Option<&str>) -> bool {
     let mut targets = vec![];
@@ -83,6 +86,7 @@ fn focus_browser_window(_browser_path: Option<&str>) -> bool {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn execute_shortcut(
     app: tauri::AppHandle,
     path: String,
@@ -131,6 +135,7 @@ pub async fn execute_shortcut(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
     use tauri::Manager;
     if let Some(float_win) = app.get_webview_window("floating") {
@@ -145,8 +150,13 @@ pub async fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn resize_floating_window(app: tauri::AppHandle, width: f64, height: f64) -> Result<(), String> {
-    use tauri::{Manager, LogicalSize};
+#[specta::specta]
+pub async fn resize_floating_window(
+    app: tauri::AppHandle,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    use tauri::{LogicalSize, Manager};
     if let Some(float_win) = app.get_webview_window("floating") {
         let _ = float_win.set_size(LogicalSize::new(width, height));
     }
@@ -154,6 +164,7 @@ pub async fn resize_floating_window(app: tauri::AppHandle, width: f64, height: f
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }

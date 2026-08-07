@@ -92,7 +92,6 @@ import { getVersion } from "@tauri-apps/api/app";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import {
 	checkForUpdates,
-	notifyUpdateAvailable,
 	openReleasePage,
 	getAppSetting,
 	setAppSetting,
@@ -176,7 +175,6 @@ async function handleCheckUpdate() {
 	try {
 		const res = await checkForUpdates(false);
 		if (res?.hasUpdate && res.latestVersion) {
-			await notifyUpdateAvailable(res.latestVersion);
 			toast.add({
 				title: `New Update Available (${res.latestVersion})`,
 				description: `A newer version of Nook is available on GitHub Releases.`,

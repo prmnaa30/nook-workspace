@@ -1,4 +1,4 @@
-import { dbPromise } from "./db";
+import { commands } from "../bindings";
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
 
@@ -14,37 +14,18 @@ export interface Task {
 }
 
 export async function getTasksByWorkspaceService(workspaceId: number): Promise<Task[]> {
-  const db = await dbPromise;
-  return db.select(
-    "SELECT * FROM tasks WHERE workspace_id = $1 ORDER BY id DESC",
-    [workspaceId]
-  );
+  const res = await commands.getTasksByWorkspace(workspaceId);
+  return ((res as any).data ?? res) as Task[];
 }
 
 export async function getAllGlobalTasksService(): Promise<Task[]> {
-  const db = await dbPromise;
-  return db.select(`
-    SELECT t.*, w.name as workspace_name
-    FROM tasks t
-    JOIN workspaces w ON t.workspace_id = w.id
-    WHERE (w.show_in_global_tasks = 1 OR w.show_in_global_tasks IS NULL)
-    ORDER BY
-      t.due_date ASC,
-      t.id DESC
-  `);
+  const res = await commands.getAllGlobalTasks();
+  return ((res as any).data ?? res) as Task[];
 }
 
 export async function getAllTasksForTimelineService(): Promise<Task[]> {
-  const db = await dbPromise;
-  return db.select(`
-    SELECT t.*, w.name as workspace_name
-    FROM tasks t
-    JOIN workspaces w ON t.workspace_id = w.id
-    WHERE w.show_in_global_tasks = 1 OR w.show_in_global_tasks IS NULL
-    ORDER BY
-      t.due_date ASC,
-      t.id DESC
-  `);
+  const res = await commands.getAllTasksForTimeline();
+  return ((res as any).data ?? res) as Task[];
 }
 
 export async function createTaskService(
@@ -53,30 +34,14 @@ export async function createTaskService(
   description?: string,
   dueDate?: string
 ): Promise<void> {
-  const db = await dbPromise;
-  await db.execute(
-    "INSERT INTO tasks (workspace_id, title, description, due_date) VALUES ($1, $2, $3, $4)",
-    [workspaceId, title, description || null, dueDate || null]
-  );
-  await db.execute(
-    "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-    [workspaceId]
-  );
+  await commands.createTask(workspaceId, title, description || null, dueDate || null);
 }
 
 export async function updateTaskStatusService(
   taskId: number,
   status: TaskStatus
 ): Promise<void> {
-  const db = await dbPromise;
-  await db.execute(
-    "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = $1)",
-    [taskId]
-  );
-  await db.execute("UPDATE tasks SET status = $1 WHERE id = $2", [
-    status,
-    taskId,
-  ]);
+  await commands.updateTaskStatus(taskId, status);
 }
 
 export async function updateTaskService(
@@ -86,29 +51,9 @@ export async function updateTaskService(
   dueDate?: string,
   status?: TaskStatus
 ): Promise<void> {
-  const db = await dbPromise;
-  await db.execute(
-    "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = $1)",
-    [taskId]
-  );
-  if (status) {
-    await db.execute(
-      "UPDATE tasks SET title = $1, description = $2, due_date = $3, status = $4 WHERE id = $5",
-      [title, description || null, dueDate || null, status, taskId]
-    );
-  } else {
-    await db.execute(
-      "UPDATE tasks SET title = $1, description = $2, due_date = $3 WHERE id = $4",
-      [title, description || null, dueDate || null, taskId]
-    );
-  }
+  await commands.updateTask(taskId, title, description || null, dueDate || null, status || null);
 }
 
 export async function deleteTaskService(taskId: number): Promise<void> {
-  const db = await dbPromise;
-  await db.execute(
-    "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = $1)",
-    [taskId]
-  );
-  await db.execute("DELETE FROM tasks WHERE id = $1", [taskId]);
+  await commands.deleteTask(taskId);
 }

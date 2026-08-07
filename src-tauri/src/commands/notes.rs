@@ -1,6 +1,9 @@
+use crate::db::DbState;
+use crate::models::{Note, NoteWithWorkspace};
 use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
+use tauri::State;
 
 fn resolve_and_migrate_note(
     home_dir: &std::path::Path,
@@ -22,7 +25,176 @@ fn resolve_and_migrate_note(
     target_path
 }
 
+// Metadata Database Commands
+
 #[tauri::command]
+#[specta::specta]
+pub async fn get_notes(
+    state: State<'_, DbState>,
+    workspace_id: i64,
+) -> Result<Vec<Note>, String> {
+    sqlx::query_as::<_, Note>(
+        "SELECT * FROM notes WHERE workspace_id = ? ORDER BY id DESC"
+    )
+    .bind(workspace_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn search_all_notes(
+    state: State<'_, DbState>,
+) -> Result<Vec<NoteWithWorkspace>, String> {
+    sqlx::query_as::<_, NoteWithWorkspace>(
+        "SELECT n.*, w.name as workspace_name FROM notes n JOIN workspaces w ON n.workspace_id = w.id ORDER BY n.title ASC"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn create_note(
+    state: State<'_, DbState>,
+    workspace_id: i64,
+    title: String,
+    filename: String,
+    is_pinned: Option<bool>,
+) -> Result<(), String> {
+    let pinned_flag = if is_pinned.unwrap_or(false) { 1 } else { 0 };
+    sqlx::query(
+        "INSERT INTO notes (workspace_id, title, filename, is_pinned) VALUES (?, ?, ?, ?)"
+    )
+    .bind(workspace_id)
+    .bind(title)
+    .bind(filename)
+    .bind(pinned_flag)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn update_note(
+    state: State<'_, DbState>,
+    note_id: i64,
+    title: String,
+    filename: String,
+    is_pinned: Option<bool>,
+) -> Result<(), String> {
+    if let Some(pinned) = is_pinned {
+        let flag = if pinned { 1 } else { 0 };
+        sqlx::query(
+            "UPDATE notes SET title = ?, filename = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        )
+        .bind(title)
+        .bind(filename)
+        .bind(flag)
+        .bind(note_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    } else {
+        sqlx::query(
+            "UPDATE notes SET title = ?, filename = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        )
+        .bind(title)
+        .bind(filename)
+        .bind(note_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn toggle_note_pin(
+    state: State<'_, DbState>,
+    note_id: i64,
+    is_pinned: bool,
+) -> Result<(), String> {
+    let flag = if is_pinned { 1 } else { 0 };
+    sqlx::query(
+        "UPDATE notes SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    )
+    .bind(flag)
+    .bind(note_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn update_note_timestamp(
+    state: State<'_, DbState>,
+    note_id: i64,
+) -> Result<(), String> {
+    sqlx::query(
+        "UPDATE notes SET updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    )
+    .bind(note_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn move_note(
+    state: State<'_, DbState>,
+    note_id: i64,
+    target_workspace_id: i64,
+) -> Result<(), String> {
+    sqlx::query(
+        "UPDATE notes SET workspace_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    )
+    .bind(target_workspace_id)
+    .bind(note_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    )
+    .bind(target_workspace_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_note(state: State<'_, DbState>, note_id: i64) -> Result<(), String> {
+    sqlx::query("DELETE FROM notes WHERE id = ?")
+        .bind(note_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+// Markdown Filesystem Operations
+
+#[tauri::command]
+#[specta::specta]
 pub async fn check_note_file_exists(
     app: tauri::AppHandle,
     workspace_id: i64,
@@ -36,6 +208,7 @@ pub async fn check_note_file_exists(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn read_note(
     app: tauri::AppHandle,
     workspace_id: i64,
@@ -55,6 +228,7 @@ pub async fn read_note(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn write_note(
     app: tauri::AppHandle,
     workspace_id: i64,
@@ -77,6 +251,7 @@ pub async fn write_note(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn rename_note_file(
     app: tauri::AppHandle,
     workspace_id: i64,
@@ -103,6 +278,7 @@ pub async fn rename_note_file(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_note_file(
     app: tauri::AppHandle,
     workspace_id: i64,
@@ -118,6 +294,7 @@ pub async fn delete_note_file(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn move_note_file(
     app: tauri::AppHandle,
     from_workspace_id: i64,

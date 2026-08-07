@@ -1,35 +1,16 @@
-import { dbPromise } from "./db";
+import { commands, Shortcut as ShortcutType, ShortcutWithWorkspace } from "../bindings";
 
-export interface Shortcut {
-	id: number;
-	workspace_id: number;
-	title: string;
-	type: "web" | "folder" | "file";
-	path: string;
-	browser_path: string | null;
-	is_pinned: number;
-}
-
-export interface SearchShortcut extends Shortcut {
-	workspace_name: string;
-}
+export type Shortcut = Omit<ShortcutType, "type"> & { type: "web" | "folder" | "file" };
+export type SearchShortcut = Omit<ShortcutWithWorkspace, "type"> & { type: "web" | "folder" | "file" };
 
 export async function searchAllShortcutsService(): Promise<SearchShortcut[]> {
-	const db = await dbPromise;
-	return db.select(`
-		SELECT s.*, w.name as workspace_name 
-		FROM shortcuts s 
-		JOIN workspaces w ON s.workspace_id = w.id 
-		ORDER BY s.title ASC
-	`);
+	const res = await commands.searchAllShortcuts();
+	return ((res as any).data ?? res) as SearchShortcut[];
 }
 
-export async function getShortcutsService(workspadeId: number): Promise<Shortcut[]> {
-	const db = await dbPromise;
-	return await db.select(
-		"SELECT * FROM shortcuts WHERE workspace_id = $1 ORDER BY id ASC",
-		[workspadeId],
-	);
+export async function getShortcutsService(workspaceId: number): Promise<Shortcut[]> {
+	const res = await commands.getShortcuts(workspaceId);
+	return ((res as any).data ?? res) as Shortcut[];
 }
 
 export async function createShortcutService(
@@ -40,11 +21,7 @@ export async function createShortcutService(
 	browserPath: string | null = null,
 	isPinned: boolean = false,
 ): Promise<void> {
-	const db = await dbPromise;
-	await db.execute(
-		"INSERT INTO shortcuts (workspace_id, title, type, path, browser_path, is_pinned) VALUES ($1, $2, $3, $4, $5, $6)",
-		[workspaceId, title, type, path, browserPath, isPinned ? 1 : 0],
-	);
+	await commands.createShortcut(workspaceId, title, type, path, browserPath, isPinned);
 }
 
 export async function updateShortcutService(
@@ -55,44 +32,20 @@ export async function updateShortcutService(
 	browserPath: string | null = null,
 	isPinned?: boolean,
 ): Promise<void> {
-	const db = await dbPromise;
-	if (isPinned !== undefined) {
-		await db.execute(
-			"UPDATE shortcuts SET title = $1, type = $2, path = $3, browser_path = $4, is_pinned = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6",
-			[title, type, path, browserPath, isPinned ? 1 : 0, shortcutId],
-		);
-	} else {
-		await db.execute(
-			"UPDATE shortcuts SET title = $1, type = $2, path = $3, browser_path = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5",
-			[title, type, path, browserPath, shortcutId],
-		);
-	}
+	await commands.updateShortcut(shortcutId, title, type, path, browserPath, isPinned ?? null);
 }
 
 export async function toggleShortcutPinService(shortcutId: number, isPinned: boolean): Promise<void> {
-	const db = await dbPromise;
-	await db.execute(
-		"UPDATE shortcuts SET is_pinned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-		[isPinned ? 1 : 0, shortcutId],
-	);
+	await commands.toggleShortcutPin(shortcutId, isPinned);
 }
 
 export async function moveShortcutService(
 	shortcutId: number,
 	targetWorkspaceId: number,
 ): Promise<void> {
-	const db = await dbPromise;
-	await db.execute(
-		"UPDATE shortcuts SET workspace_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-		[targetWorkspaceId, shortcutId],
-	);
-	await db.execute(
-		"UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-		[targetWorkspaceId],
-	);
+	await commands.moveShortcut(shortcutId, targetWorkspaceId);
 }
 
 export async function deleteShortcutService(id: number): Promise<void> {
-	const db = await dbPromise;
-	await db.execute("DELETE FROM shortcuts WHERE id = $1", [id]);
+	await commands.deleteShortcut(id);
 }

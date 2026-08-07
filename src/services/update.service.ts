@@ -1,7 +1,6 @@
-import Database from "@tauri-apps/plugin-sql";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { commands } from "../bindings";
 
 const GITHUB_RELEASES_API = "https://api.github.com/repos/prmnaa30/nook-workspace/releases/latest";
 const GITHUB_RELEASES_PAGE = "https://github.com/prmnaa30/nook-workspace/releases";
@@ -16,9 +15,8 @@ export interface UpdateCheckResult {
 
 export async function getAppSetting(key: string): Promise<string | null> {
 	try {
-		const db = await Database.load("sqlite:workstation.db");
-		const rows: any[] = await db.select("SELECT value FROM app_settings WHERE key = $1", [key]);
-		return rows.length > 0 ? rows[0].value : null;
+		const res = await commands.getAppSetting(key);
+		return ((res as any).data ?? res) as string | null;
 	} catch (e) {
 		console.warn(`Failed to read app_setting key '${key}':`, e);
 		return null;
@@ -27,11 +25,7 @@ export async function getAppSetting(key: string): Promise<string | null> {
 
 export async function setAppSetting(key: string, value: string): Promise<void> {
 	try {
-		const db = await Database.load("sqlite:workstation.db");
-		await db.execute(
-			"INSERT INTO app_settings (key, value, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP",
-			[key, value]
-		);
+		await commands.setAppSetting(key, value);
 	} catch (e) {
 		console.warn(`Failed to set app_setting key '${key}':`, e);
 	}
@@ -113,24 +107,6 @@ export async function checkForUpdates(isAutoCheck = false): Promise<UpdateCheckR
 	}
 }
 
-export async function notifyUpdateAvailable(latestVersion: string) {
-	try {
-		let permissionGranted = await isPermissionGranted();
-		if (!permissionGranted) {
-			const permission = await requestPermission();
-			permissionGranted = permission === "granted";
-		}
-		if (permissionGranted) {
-			sendNotification({
-				title: "Nook Update Available",
-				body: `Version ${latestVersion} is available on GitHub! Click to check release notes.`,
-			});
-		}
-	} catch (e) {
-		console.warn("Could not send OS notification:", e);
-	}
-}
-
 export async function openReleasePage(url?: string) {
 	const targetUrl = url || GITHUB_RELEASES_PAGE;
 	try {
@@ -141,32 +117,5 @@ export async function openReleasePage(url?: string) {
 }
 
 export async function syncAutostartPreferenceOnBoot() {
-	try {
-		const { enable, disable, isEnabled } = await import("@tauri-apps/plugin-autostart");
-		const preference = await getAppSetting("autostart_preference");
-
-		if (preference === "disabled") {
-			// User explicitly disabled autostart, ensure it remains disabled even after installer/updates
-			const currentlyEnabled = await isEnabled();
-			if (currentlyEnabled) {
-				await disable();
-			}
-		} else if (preference === "enabled") {
-			// User explicitly enabled autostart, ensure it remains enabled
-			const currentlyEnabled = await isEnabled();
-			if (!currentlyEnabled) {
-				await enable();
-			}
-		} else {
-			// Fresh install: default to enabled
-			const currentlyEnabled = await isEnabled();
-			if (!currentlyEnabled) {
-				await enable();
-			}
-			await setAppSetting("autostart_preference", "enabled");
-		}
-	} catch (e) {
-		console.warn("Could not sync autostart preference on boot:", e);
-	}
+	// Handled on boot directly in Rust backend
 }
-
