@@ -272,9 +272,9 @@ async getAllTasksForTimeline() : Promise<Result<TaskWithWorkspace[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async createTask(workspaceId: number, title: string, description: string | null, dueDate: string | null) : Promise<Result<null, string>> {
+async createTask(workspaceId: number, title: string, description: string | null, dueDate: string | null, reminderAt: string | null) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("create_task", { workspaceId, title, description, dueDate }) };
+    return { status: "ok", data: await TAURI_INVOKE("create_task", { workspaceId, title, description, dueDate, reminderAt }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -288,9 +288,9 @@ async updateTaskStatus(taskId: number, status: string) : Promise<Result<null, st
     else return { status: "error", error: e  as any };
 }
 },
-async updateTask(taskId: number, title: string, description: string | null, dueDate: string | null, status: string | null) : Promise<Result<null, string>> {
+async updateTask(taskId: number, title: string, description: string | null, dueDate: string | null, status: string | null, reminderAt: string | null) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("update_task", { taskId, title, description, dueDate, status }) };
+    return { status: "ok", data: await TAURI_INVOKE("update_task", { taskId, title, description, dueDate, status, reminderAt }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -299,6 +299,22 @@ async updateTask(taskId: number, title: string, description: string | null, dueD
 async deleteTask(taskId: number) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("delete_task", { taskId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setTaskReminder(taskId: number, reminderAt: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_task_reminder", { taskId, reminderAt }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearTaskReminder(taskId: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_task_reminder", { taskId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -348,20 +364,19 @@ async showUpdateNotification(version: string, url: string) : Promise<Result<null
 
 /** user-defined types **/
 
-export type Note = { id: number; workspace_id: number; title: string; filename: string; is_pinned: number; created_at: string | null; updated_at: string | null }
-export type NoteWithWorkspace = { id: number; workspace_id: number; title: string; filename: string; is_pinned: number; created_at: string | null; updated_at: string | null; workspace_name: string }
+export type Note = { id: number; workspace_id: number; title: string; filename: string; is_pinned: number | null; created_at: string | null; updated_at: string | null }
+export type NoteWithWorkspace = { id: number; workspace_id: number; title: string; filename: string; is_pinned: number | null; created_at: string | null; updated_at: string | null; workspace_name: string }
 export type Shortcut = { id: number; workspace_id: number; title: string; type: string; path: string; browser_path: string | null; is_pinned: number; created_at: string | null; updated_at: string | null }
 export type ShortcutWithWorkspace = { id: number; workspace_id: number; title: string; type: string; path: string; browser_path: string | null; is_pinned: number; created_at: string | null; updated_at: string | null; workspace_name: string }
-export type Task = { id: number; workspace_id: number; title: string; description: string | null; status: string; due_date: string | null; created_at: string | null }
+export type Task = { id: number; workspace_id: number; title: string; description: string | null; status: string; due_date: string | null; reminder_at: string | null; reminder_sent: number | null; created_at: string | null }
 export type TaskSummary = { tasks_due_today: number; total_tasks_remaining: number }
-export type TaskWithWorkspace = { id: number; workspace_id: number; title: string; description: string | null; status: string; due_date: string | null; created_at: string | null; workspace_name: string | null }
+export type TaskWithWorkspace = { id: number; workspace_id: number; title: string; description: string | null; status: string; due_date: string | null; reminder_at: string | null; reminder_sent: number | null; created_at: string | null; workspace_name: string | null }
 export type Workspace = { id: number; name: string; description: string | null; is_favorite: number; show_in_global_tasks: number | null; created_at: string | null; updated_at: string | null }
 
 /** tauri-specta globals **/
 
 import {
 	invoke as TAURI_INVOKE,
-	Channel as _TAURI_CHANNEL,
 } from "@tauri-apps/api/core";
 import * as TAURI_API_EVENT from "@tauri-apps/api/event";
 import { type WebviewWindow as __WebviewWindow__ } from "@tauri-apps/api/webviewWindow";

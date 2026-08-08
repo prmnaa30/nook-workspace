@@ -2,9 +2,19 @@ import { commands, Workspace as WorkspaceType } from "../bindings";
 
 export type Workspace = WorkspaceType;
 
+function unwrapArrayResult<T>(res: any): T[] {
+  if (res && typeof res === "object" && "status" in res) {
+    if (res.status === "ok" && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return [];
+  }
+  return Array.isArray(res) ? res : [];
+}
+
 export async function getWorkspacesService(): Promise<Workspace[]> {
   const res = await commands.getWorkspaces();
-  return ((res as any).data ?? res) as Workspace[];
+  return unwrapArrayResult<Workspace>(res);
 }
 
 export async function createWorkspaceService(name: string, description: string, showInGlobalTasks: boolean = true): Promise<void> {

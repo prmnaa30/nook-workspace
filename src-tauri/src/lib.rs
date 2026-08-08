@@ -8,7 +8,7 @@ use specta_typescript::Typescript;
 use std::fs;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Listener, Manager};
+use tauri::{Emitter, Listener, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_sql::{Migration, MigrationKind};
 use tauri_specta::collect_commands;
@@ -51,6 +51,12 @@ pub fn run() {
             version: 6,
             description: "add app_settings table for system key-value storage",
             sql: include_str!("../migrations/06_add_app_settings.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 7,
+            description: "add reminder_at and reminder_sent columns to tasks",
+            sql: include_str!("../migrations/07_add_task_reminders.sql"),
             kind: MigrationKind::Up,
         },
     ];
@@ -100,6 +106,8 @@ pub fn run() {
         commands::update_task_status,
         commands::update_task,
         commands::delete_task,
+        commands::set_task_reminder,
+        commands::clear_task_reminder,
         commands::get_app_setting,
         commands::set_app_setting,
         commands::show_startup_agenda,
@@ -162,18 +170,41 @@ pub fn run() {
             let db_url = format!("sqlite:{}?mode=rwc", db_path.to_string_lossy());
 
             let pool = tauri::async_runtime::block_on(async {
-                sqlx::SqlitePool::connect(&db_url).await
-            })
-            .expect("Failed to connect to SQLite database");
+                let p = sqlx::SqlitePool::connect(&db_url)
+                    .await
+                    .expect("Failed to connect to SQLite database");
+
+                let sql_scripts = vec![
+                    include_str!("../migrations/01_init-schema.sql"),
+                    include_str!("../migrations/02_add_notes_table.sql"),
+                    include_str!("../migrations/03_add_workspace_triggers.sql"),
+                    include_str!("../migrations/04_add_tasks_table.sql"),
+                    include_str!("../migrations/05_add_is_pinned_flags.sql"),
+                    include_str!("../migrations/06_add_app_settings.sql"),
+                    include_str!("../migrations/07_add_task_reminders.sql"),
+                ];
+
+                for script in sql_scripts {
+                    for statement in script.split(';') {
+                        let stmt = statement.trim();
+                        if !stmt.is_empty() {
+                            let _ = sqlx::query(stmt).execute(&p).await;
+                        }
+                    }
+                }
+
+                p
+            });
             app.manage(db::DbState { pool: pool.clone() });
 
             // Sync autostart preference on boot in Rust
             let app_handle = app.handle().clone();
+            let pool_autostart = pool.clone();
             tauri::async_runtime::spawn(async move {
                 let row = sqlx::query_scalar::<_, String>(
                     "SELECT value FROM app_settings WHERE key = 'autostart_preference'",
                 )
-                .fetch_optional(&pool)
+                .fetch_optional(&pool_autostart)
                 .await
                 .ok()
                 .flatten();
@@ -194,8 +225,64 @@ pub fn run() {
                         let _ = sqlx::query(
                             "INSERT INTO app_settings (key, value, updated_at) VALUES ('autostart_preference', 'enabled', CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = 'enabled', updated_at = CURRENT_TIMESTAMP",
                         )
-                        .execute(&pool)
+                        .execute(&pool_autostart)
                         .await;
+                    }
+                }
+            });
+
+            // Spawn background task reminder polling loop (every 30 seconds)
+            let app_handle_reminders = app.handle().clone();
+            let pool_reminders = pool.clone();
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+                loop {
+                    interval.tick().await;
+
+                    #[derive(sqlx::FromRow)]
+                    struct DueReminder {
+                        id: i64,
+                        title: String,
+                        workspace_name: Option<String>,
+                    }
+
+                    let rows: Vec<DueReminder> = sqlx::query_as::<_, DueReminder>(
+                        "SELECT t.id, t.title, w.name as workspace_name FROM tasks t JOIN workspaces w ON t.workspace_id = w.id WHERE t.status != 'DONE' AND t.reminder_at IS NOT NULL AND t.reminder_at <= strftime('%Y-%m-%dT%H:%M:%S', 'now', 'localtime') AND t.reminder_sent = 0"
+                    )
+                    .fetch_all(&pool_reminders)
+                    .await
+                    .unwrap_or_default();
+
+                    for item in rows {
+                        let _ = sqlx::query("UPDATE tasks SET reminder_sent = 1 WHERE id = ?")
+                            .bind(item.id)
+                            .execute(&pool_reminders)
+                            .await;
+
+                        #[cfg(target_os = "windows")]
+                        {
+                            use tauri_winrt_notification::{Duration, Sound, Toast};
+                            let app_handle_inner = app_handle_reminders.clone();
+                            let body = format!(
+                                "Workspace: {}",
+                                item.workspace_name.as_deref().unwrap_or("General")
+                            );
+                            let _ = Toast::new("com.nook")
+                                .title(&format!("Reminder: {}", item.title))
+                                .text1(&body)
+                                .sound(Some(Sound::Reminder))
+                                .duration(Duration::Short)
+                                .on_activated(move || {
+                                    if let Some(window) = app_handle_inner.get_webview_window("main") {
+                                        let _ = window.unminimize();
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                        let _ = window.emit("navigate-view", "global-tasks");
+                                    }
+                                    Ok(())
+                                })
+                                .show();
+                        }
                     }
                 }
             });

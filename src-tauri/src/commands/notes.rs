@@ -19,6 +19,15 @@ fn resolve_and_migrate_note(
         if legacy_path.exists() {
             let _ = fs::create_dir_all(&ws_dir);
             let _ = fs::rename(&legacy_path, &target_path);
+        } else {
+            let old_legacy_path = home_dir
+                .join(".workstation_data")
+                .join("notes")
+                .join(filename);
+            if old_legacy_path.exists() {
+                let _ = fs::create_dir_all(&ws_dir);
+                let _ = fs::rename(&old_legacy_path, &target_path);
+            }
         }
     }
 

@@ -3,14 +3,27 @@ import { commands, Note as NoteType, NoteWithWorkspace } from "../bindings";
 export type Note = NoteType;
 export type SearchNote = NoteWithWorkspace;
 
+function unwrapArrayResult<T>(res: any): T[] {
+	if (res && typeof res === "object" && "status" in res) {
+		if (res.status === "ok" && Array.isArray(res.data)) {
+			return res.data;
+		}
+		if (res.status === "error") {
+			console.error("[notes.service] IPC command error:", res.error);
+		}
+		return [];
+	}
+	return Array.isArray(res) ? res : [];
+}
+
 export async function searchAllNotesService(): Promise<SearchNote[]> {
 	const res = await commands.searchAllNotes();
-	return ((res as any).data ?? res) as SearchNote[];
+	return unwrapArrayResult<SearchNote>(res);
 }
 
 export async function getNotesService(workspaceId: number): Promise<Note[]> {
 	const res = await commands.getNotes(workspaceId);
-	return ((res as any).data ?? res) as Note[];
+	return unwrapArrayResult<Note>(res);
 }
 
 export async function createNoteService(

@@ -3,14 +3,24 @@ import { commands, Shortcut as ShortcutType, ShortcutWithWorkspace } from "../bi
 export type Shortcut = Omit<ShortcutType, "type"> & { type: "web" | "folder" | "file" };
 export type SearchShortcut = Omit<ShortcutWithWorkspace, "type"> & { type: "web" | "folder" | "file" };
 
+function unwrapArrayResult<T>(res: any): T[] {
+	if (res && typeof res === "object" && "status" in res) {
+		if (res.status === "ok" && Array.isArray(res.data)) {
+			return res.data;
+		}
+		return [];
+	}
+	return Array.isArray(res) ? res : [];
+}
+
 export async function searchAllShortcutsService(): Promise<SearchShortcut[]> {
 	const res = await commands.searchAllShortcuts();
-	return ((res as any).data ?? res) as SearchShortcut[];
+	return unwrapArrayResult<SearchShortcut>(res);
 }
 
 export async function getShortcutsService(workspaceId: number): Promise<Shortcut[]> {
 	const res = await commands.getShortcuts(workspaceId);
-	return ((res as any).data ?? res) as Shortcut[];
+	return unwrapArrayResult<Shortcut>(res);
 }
 
 export async function createShortcutService(

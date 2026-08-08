@@ -8,7 +8,7 @@ pub struct Note {
     pub workspace_id: i64,
     pub title: String,
     pub filename: String,
-    pub is_pinned: i64,
+    pub is_pinned: Option<i64>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
 }
@@ -19,7 +19,7 @@ pub struct NoteWithWorkspace {
     pub workspace_id: i64,
     pub title: String,
     pub filename: String,
-    pub is_pinned: i64,
+    pub is_pinned: Option<i64>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
     pub workspace_name: String,
