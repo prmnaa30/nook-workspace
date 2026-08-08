@@ -1,13 +1,9 @@
 <template>
 	<div class="w-screen h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden shadow-2xl">
-		<!-- Top Bar: Animated Mode Indicator + Search Input -->
+		<!-- Header Search Bar -->
 		<FloatingHeader
 			ref="headerRef"
 			v-model:search-query="searchQuery"
-			:mode="mode"
-			:animation-name="modeAnimationName"
-			@toggle-mode="toggleMode"
-			@after-enter="focusActiveInput"
 			@move-selection="moveSelection"
 			@execute-active="executeActiveItem"
 			@close-window="closeWindow"
@@ -15,31 +11,14 @@
 
 		<!-- Search Mode Body -->
 		<FloatingSearchResults
-			v-if="mode === 'search'"
 			:items="filteredItems"
 			:active-index="activeIndex"
 			:search-query="searchQuery"
 			@select-item="executeItem"
 		/>
 
-		<!-- Quick Task Create Mode Body -->
-		<FloatingTaskForm
-			v-else-if="mode === 'create-task'"
-			ref="taskFormRef"
-			v-model:target-workspace-id="targetWorkspaceId"
-			v-model:task-title="taskTitle"
-			v-model:task-description="taskDescription"
-			v-model:task-due-date="taskDueDate"
-			:workspace-options="workspaceOptions"
-			@submit="submitQuickTask"
-			@close-window="closeWindow"
-		/>
-
 		<!-- Footer Shortcuts Bar -->
-		<FloatingFooter
-			:mode="mode"
-			@toggle-mode="toggleMode"
-		/>
+		<FloatingFooter />
 	</div>
 </template>
 
@@ -48,7 +27,6 @@ import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import { useShortcutStore } from "../../stores/shortcuts";
 import { useNoteStore } from "../../stores/notes";
 import { useWorkspaceStore } from "../../stores/workspaces";
-import { useTaskStore } from "../../stores/tasks";
 import { storeToRefs } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -57,16 +35,11 @@ import { emitTo } from "@tauri-apps/api/event";
 
 import FloatingHeader from "./FloatingHeader.vue";
 import FloatingSearchResults from "./FloatingSearchResults.vue";
-import FloatingTaskForm from "./FloatingTaskForm.vue";
 import FloatingFooter from "./FloatingFooter.vue";
-
-const mode = ref<"search" | "create-task">("search");
-const modeAnimationName = ref<"slide-up" | "slide-down">("slide-up");
 
 const shortcutStore = useShortcutStore();
 const noteStore = useNoteStore();
 const workspaceStore = useWorkspaceStore();
-const taskStore = useTaskStore();
 
 const { allShortcuts } = storeToRefs(shortcutStore);
 const { allNotes } = storeToRefs(noteStore);
@@ -75,23 +48,9 @@ const searchQuery = ref("");
 const activeIndex = ref(0);
 
 const headerRef = ref<any>(null);
-const taskFormRef = ref<any>(null);
 
-// Form fields for quick task
-const targetWorkspaceId = ref<number | undefined>(undefined);
-const taskTitle = ref("");
-const taskDescription = ref("");
-const taskDueDate = ref("");
-
-const workspaceOptions = computed(() => {
-	return workspaceStore.workspaces.map((w) => ({
-		label: w.name,
-		value: w.id,
-	}));
-});
-
-async function adjustWindowSize(targetMode: "search" | "create-task") {
-	const targetHeight = targetMode === "create-task" ? 540 : 420;
+async function adjustWindowSize() {
+	const targetHeight = 420;
 	try {
 		await invoke("resize_floating_window", { width: 650.0, height: targetHeight * 1.0 });
 	} catch (e) {
@@ -106,11 +65,7 @@ async function adjustWindowSize(targetMode: "search" | "create-task") {
 }
 
 function doFocus() {
-	if (mode.value === "search") {
-		headerRef.value?.focusSearchInput();
-	} else {
-		taskFormRef.value?.focusTitleInput();
-	}
+	headerRef.value?.focusSearchInput();
 }
 
 function focusActiveInput() {
@@ -120,19 +75,6 @@ function focusActiveInput() {
 		setTimeout(doFocus, 50);
 		setTimeout(doFocus, 150);
 	});
-}
-
-function toggleMode() {
-	if (mode.value === "search") {
-		modeAnimationName.value = "slide-up";
-		mode.value = "create-task";
-	} else {
-		modeAnimationName.value = "slide-down";
-		mode.value = "search";
-	}
-
-	adjustWindowSize(mode.value);
-	focusActiveInput();
 }
 
 const filteredItems = computed(() => {
@@ -167,32 +109,13 @@ watch(searchQuery, () => {
 	activeIndex.value = 0;
 });
 
-watch(mode, (newMode) => {
-	if (newMode === "create-task") {
-		syncDefaultWorkspace();
-	}
-	adjustWindowSize(newMode);
-	focusActiveInput();
-});
-
-function syncDefaultWorkspace() {
-	if (workspaceStore.workspaces.length > 0) {
-		if (workspaceStore.lastWorkspaceId && workspaceStore.workspaces.some((w) => w.id === workspaceStore.lastWorkspaceId)) {
-			targetWorkspaceId.value = workspaceStore.lastWorkspaceId;
-		} else {
-			targetWorkspaceId.value = workspaceStore.workspaces[0].id;
-		}
-	}
-}
-
 onMounted(async () => {
 	await Promise.all([
 		shortcutStore.getAllShortcuts(),
 		noteStore.getAllNotes(),
 		workspaceStore.getWorkspaces(),
 	]);
-	syncDefaultWorkspace();
-	adjustWindowSize(mode.value);
+	adjustWindowSize();
 	focusActiveInput();
 });
 
@@ -204,14 +127,9 @@ onMounted(async () => {
 			shortcutStore.getAllShortcuts();
 			noteStore.getAllNotes();
 			workspaceStore.getWorkspaces();
-			syncDefaultWorkspace();
 			searchQuery.value = "";
-			taskTitle.value = "";
-			taskDescription.value = "";
-			taskDueDate.value = "";
-			mode.value = "search";
 			activeIndex.value = 0;
-			adjustWindowSize("search");
+			adjustWindowSize();
 			focusActiveInput();
 		});
 	} catch (e) {
@@ -257,22 +175,6 @@ async function executeItem(item: any) {
 	}
 }
 
-async function submitQuickTask() {
-	if (!taskTitle.value.trim() || !targetWorkspaceId.value) return;
-
-	try {
-		await taskStore.createTask(
-			targetWorkspaceId.value,
-			taskTitle.value.trim(),
-			taskDescription.value.trim() || undefined,
-			taskDueDate.value || undefined
-		);
-		await closeWindow();
-	} catch (error) {
-		console.error("Failed to quick create task:", error);
-	}
-}
-
 async function closeWindow() {
 	try {
 		const currentWindow = getCurrentWindow();
@@ -284,13 +186,8 @@ async function closeWindow() {
 
 const handleGlobalKeyDown = async (event: KeyboardEvent) => {
 	if (event.key === "Tab") {
-		if (event.ctrlKey) {
-			event.preventDefault();
-			toggleMode();
-		} else if (mode.value === "search") {
-			event.preventDefault();
-			moveSelection(event.shiftKey ? -1 : 1);
-		}
+		event.preventDefault();
+		moveSelection(event.shiftKey ? -1 : 1);
 		return;
 	}
 
