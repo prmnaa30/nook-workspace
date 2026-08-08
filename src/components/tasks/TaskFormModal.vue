@@ -69,8 +69,13 @@
 
 					<div class="flex flex-col gap-1">
 						<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Due Date</label>
-						<TaskDateTimePicker v-model="formDueDate" />
+						<TaskDateTimePicker v-model="formDueDate" placeholder="Select due date" />
 					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Reminder Time</label>
+					<TaskDateTimePicker v-model="formReminderAt" placeholder="Set notification alert time" />
 				</div>
 			</form>
 		</template>
@@ -113,6 +118,7 @@ const formTitle = ref("");
 const formDescription = ref("");
 const formStatus = ref<TaskStatus>("TODO");
 const formDueDate = ref("");
+const formReminderAt = ref("");
 
 const statusOptions = [
 	{ label: "To Do", value: "TODO" },
@@ -142,6 +148,7 @@ function openModal(task?: Task, defaultStatus?: TaskStatus, defaultWorkspaceId?:
 		formDescription.value = task.description || "";
 		formStatus.value = task.status;
 		formDueDate.value = task.due_date ? formatForDatetimeInput(task.due_date) : "";
+		formReminderAt.value = task.reminder_at ? formatForDatetimeInput(task.reminder_at) : "";
 	} else {
 		editingTask.value = null;
 		formWorkspaceId.value = defaultWorkspaceId || props.workspaceId || workspaceStore.workspaces[0]?.id;
@@ -149,6 +156,7 @@ function openModal(task?: Task, defaultStatus?: TaskStatus, defaultWorkspaceId?:
 		formDescription.value = "";
 		formStatus.value = defaultStatus || "TODO";
 		formDueDate.value = "";
+		formReminderAt.value = "";
 	}
 	isOpen.value = true;
 }
@@ -170,14 +178,16 @@ async function saveTask() {
 			formDescription.value.trim(),
 			formDueDate.value || undefined,
 			formStatus.value,
-			targetWorkspaceId
+			targetWorkspaceId,
+			formReminderAt.value || undefined
 		);
 	} else {
 		await taskStore.createTask(
 			targetWorkspaceId,
 			formTitle.value.trim(),
 			formDescription.value.trim(),
-			formDueDate.value || undefined
+			formDueDate.value || undefined,
+			formReminderAt.value || undefined
 		);
 		if (formStatus.value !== "TODO") {
 			const newlyCreated = taskStore.workspaceTasks[0] || taskStore.globalTasks[0];

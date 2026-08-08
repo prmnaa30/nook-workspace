@@ -119,7 +119,7 @@ watch(viewMode, (newVal) => {
 const searchQuery = ref("");
 
 const timelineTasks = computed(() => {
-	return taskStore.workspaceTasks.filter((t) => t.due_date && t.due_date.trim() !== "");
+	return (taskStore.workspaceTasks || []).filter((t) => t.due_date && t.due_date.trim() !== "");
 });
 
 const filteredTasks = computed(() => {

@@ -56,11 +56,12 @@
             <!-- Always Open Time Columns (HH and MM) -->
             <div class="flex gap-1.5 h-52 select-none">
               <!-- Hours Column (00 - 23) -->
-              <div class="flex-1 flex flex-col gap-1 overflow-y-auto pr-1 timepicker-scrollbar">
+              <div ref="hoursCol" class="flex-1 flex flex-col gap-1 overflow-y-auto pr-1 timepicker-scrollbar">
                 <span class="text-[10px] text-center font-bold text-neutral-400 uppercase tracking-wider sticky top-0 bg-white dark:bg-neutral-900 py-0.5 z-10">HH</span>
                 <UButton
                   v-for="h in hourOptions"
                   :key="'h-' + h"
+                  :data-hour="h"
                   :variant="selectedHour === h ? 'solid' : 'ghost'"
                   :color="selectedHour === h ? 'primary' : 'neutral'"
                   size="xs"
@@ -73,12 +74,13 @@
 
               <div class="flex items-center text-neutral-400 font-bold self-center text-xs">:</div>
 
-              <!-- Minutes Column (00 - 55, step 5) -->
-              <div class="flex-1 flex flex-col gap-1 overflow-y-auto pl-1 timepicker-scrollbar">
+              <!-- Minutes Column (00 - 59) -->
+              <div ref="minutesCol" class="flex-1 flex flex-col gap-1 overflow-y-auto pl-1 timepicker-scrollbar">
                 <span class="text-[10px] text-center font-bold text-neutral-400 uppercase tracking-wider sticky top-0 bg-white dark:bg-neutral-900 py-0.5 z-10">MM</span>
                 <UButton
                   v-for="m in minuteOptions"
                   :key="'m-' + m"
+                  :data-minute="m"
                   :variant="selectedMinute === m ? 'solid' : 'ghost'"
                   :color="selectedMinute === m ? 'primary' : 'neutral'"
                   size="xs"
@@ -121,13 +123,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { CalendarDate, parseDate } from "@internationalized/date";
 
-const props = defineProps<{
-  modelValue?: string;
-  popoverSide?: "top" | "bottom";
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string;
+    popoverSide?: "top" | "bottom";
+    placeholder?: string;
+  }>(),
+  {
+    placeholder: "Select date & time",
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:modelValue", val: string): void;
@@ -137,6 +145,9 @@ const isOpen = ref(false);
 const timeValue = ref("09:00");
 const internalCalendarDate = ref<CalendarDate | null>(null);
 
+const hoursCol = ref<HTMLElement | null>(null);
+const minutesCol = ref<HTMLElement | null>(null);
+
 const hourOptions = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const minuteOptions = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
@@ -145,9 +156,25 @@ const selectedMinute = computed(() => {
   const m = timeValue.value.split(":")[1] || "00";
   const mNum = parseInt(m, 10);
   if (isNaN(mNum)) return "00";
-  const rounded = Math.round(mNum / 5) * 5;
-  return String(rounded >= 60 ? 55 : rounded).padStart(2, "0");
+  return String(mNum).padStart(2, "0");
 });
+
+function scrollToSelectedTime() {
+  nextTick(() => {
+    if (hoursCol.value) {
+      const activeHourEl = hoursCol.value.querySelector(`[data-hour="${selectedHour.value}"]`);
+      if (activeHourEl) {
+        activeHourEl.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+    }
+    if (minutesCol.value) {
+      const activeMinuteEl = minutesCol.value.querySelector(`[data-minute="${selectedMinute.value}"]`);
+      if (activeMinuteEl) {
+        activeMinuteEl.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+    }
+  });
+}
 
 function selectHour(h: string) {
   timeValue.value = `${h}:${selectedMinute.value}`;
@@ -186,10 +213,13 @@ watch(
 );
 
 watch(isOpen, (newVal) => {
-  if (newVal && !props.modelValue) {
-    const now = new Date();
-    internalCalendarDate.value = new CalendarDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
-    emitUpdatedDateTime();
+  if (newVal) {
+    if (!props.modelValue) {
+      const now = new Date();
+      internalCalendarDate.value = new CalendarDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      emitUpdatedDateTime();
+    }
+    scrollToSelectedTime();
   }
 });
 
@@ -224,7 +254,7 @@ function clearDate() {
 }
 
 const formattedDisplayLabel = computed(() => {
-  if (!props.modelValue) return "Select due date & time";
+  if (!props.modelValue) return props.placeholder;
   const d = new Date(props.modelValue);
   if (isNaN(d.getTime())) return props.modelValue;
   return d.toLocaleDateString(undefined, {

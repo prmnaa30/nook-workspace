@@ -139,11 +139,18 @@ const currentDateString = computed(() => {
 });
 
 const activeTasksCount = computed(() => {
-	return taskStore.globalTasks.filter((t) => t.status !== "DONE").length;
+	return (taskStore.globalTasks || []).filter((t) => t.status !== "DONE").length;
 });
 
 const upcomingDeadlinesCount = computed(() => {
-	return taskStore.timelineTasks.filter((t) => t.status !== "DONE").length;
+	const currentTime = now.value.getTime();
+	return (taskStore.timelineTasks || []).filter((t) => {
+		if (t.status === "DONE") return false;
+		if (!t.due_date || !t.due_date.trim()) return false;
+		const dueDate = new Date(t.due_date);
+		if (isNaN(dueDate.getTime())) return false;
+		return dueDate.getTime() >= currentTime;
+	}).length;
 });
 
 function formatDate(dateStr?: string | null) {

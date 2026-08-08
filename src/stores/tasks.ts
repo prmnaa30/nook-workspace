@@ -9,6 +9,8 @@ import {
   createTaskService,
   updateTaskStatusService,
   updateTaskService,
+  setTaskReminderService,
+  clearTaskReminderService,
   deleteTaskService,
 } from "../services/tasks.service";
 import { useWorkspaceStore } from "./workspaces";
@@ -61,9 +63,10 @@ export const useTaskStore = defineStore("task", () => {
     workspaceId: number,
     title: string,
     description?: string,
-    dueDate?: string
+    dueDate?: string,
+    reminderAt?: string
   ) {
-    await createTaskService(workspaceId, title, description, dueDate);
+    await createTaskService(workspaceId, title, description, dueDate, reminderAt);
     await getTasksByWorkspace(workspaceId);
     await getGlobalTasks();
     await getTimelineTasks();
@@ -90,9 +93,34 @@ export const useTaskStore = defineStore("task", () => {
     description?: string,
     dueDate?: string,
     status?: TaskStatus,
+    workspaceId?: number,
+    reminderAt?: string
+  ) {
+    await updateTaskService(taskId, title, description, dueDate, status, reminderAt);
+    if (workspaceId) {
+      await getTasksByWorkspace(workspaceId);
+    }
+    await getGlobalTasks();
+    await getTimelineTasks();
+    await refreshWorkspaces();
+  }
+
+  async function setTaskReminder(
+    taskId: number,
+    reminderAt?: string,
     workspaceId?: number
   ) {
-    await updateTaskService(taskId, title, description, dueDate, status);
+    await setTaskReminderService(taskId, reminderAt);
+    if (workspaceId) {
+      await getTasksByWorkspace(workspaceId);
+    }
+    await getGlobalTasks();
+    await getTimelineTasks();
+    await refreshWorkspaces();
+  }
+
+  async function clearTaskReminder(taskId: number, workspaceId?: number) {
+    await clearTaskReminderService(taskId);
     if (workspaceId) {
       await getTasksByWorkspace(workspaceId);
     }
@@ -122,6 +150,8 @@ export const useTaskStore = defineStore("task", () => {
     createTask,
     updateTaskStatus,
     updateTask,
+    setTaskReminder,
+    clearTaskReminder,
     deleteTask,
   };
 });

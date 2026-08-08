@@ -109,7 +109,7 @@ watch(viewMode, (newVal) => {
 
 const searchQuery = ref("");
 
-const timelineTasks = computed(() => taskStore.timelineTasks);
+const timelineTasks = computed(() => taskStore.timelineTasks || []);
 
 const filteredTasks = computed(() => {
 	let result = [...timelineTasks.value];

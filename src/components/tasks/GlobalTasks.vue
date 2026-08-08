@@ -152,16 +152,26 @@
 
 							<!-- Footer: Due date + status badges -->
 							<div class="flex items-center justify-between mt-3 pt-2 border-t border-neutral-100 dark:border-neutral-900 text-xs">
-								<div
-									v-if="task.due_date"
-									class="flex items-center gap-1 font-mono text-[11px]"
-									:class="getDueDateClass(task.due_date, task.status)"
-								>
-									<UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />
-									<span>{{ formatDate(task.due_date) }}</span>
-								</div>
-								<div v-else class="text-[11px] text-neutral-400 dark:text-neutral-600">
-									No due date
+								<div class="flex items-center gap-2">
+									<div
+										v-if="task.due_date"
+										class="flex items-center gap-1 font-mono text-[11px]"
+										:class="getDueDateClass(task.due_date, task.status)"
+									>
+										<UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />
+										<span>{{ formatDate(task.due_date) }}</span>
+									</div>
+									<div
+										v-if="task.reminder_at"
+										class="flex items-center gap-1 font-mono text-[11px] text-amber-500 dark:text-amber-400"
+										:title="`Reminder: ${formatDate(task.reminder_at)}`"
+									>
+										<UIcon name="i-lucide-bell" class="size-3.5 shrink-0" />
+										<span>{{ formatDate(task.reminder_at) }}</span>
+									</div>
+									<div v-if="!task.due_date && !task.reminder_at" class="text-[11px] text-neutral-400 dark:text-neutral-600">
+										No due date
+									</div>
 								</div>
 
 								<!-- Quick status shift button -->
@@ -275,7 +285,7 @@ const dropdownSortItems = computed<DropdownMenuItem[][]>(() => {
 	];
 });
 
-const globalTasks = computed(() => taskStore.globalTasks);
+const globalTasks = computed(() => taskStore.globalTasks || []);
 
 const filteredTasks = computed(() => {
 	let result = [...globalTasks.value];

@@ -10,6 +10,8 @@ pub struct Task {
     pub description: Option<String>,
     pub status: String,
     pub due_date: Option<String>,
+    pub reminder_at: Option<String>,
+    pub reminder_sent: Option<i64>,
     pub created_at: Option<String>,
 }
 
@@ -21,6 +23,8 @@ pub struct TaskWithWorkspace {
     pub description: Option<String>,
     pub status: String,
     pub due_date: Option<String>,
+    pub reminder_at: Option<String>,
+    pub reminder_sent: Option<i64>,
     pub created_at: Option<String>,
     pub workspace_name: Option<String>,
 }

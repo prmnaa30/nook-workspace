@@ -51,14 +51,16 @@ pub async fn create_task(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
+    reminder_at: Option<String>,
 ) -> Result<(), String> {
     sqlx::query(
-        "INSERT INTO tasks (workspace_id, title, description, due_date) VALUES (?, ?, ?, ?)"
+        "INSERT INTO tasks (workspace_id, title, description, due_date, reminder_at, reminder_sent) VALUES (?, ?, ?, ?, ?, 0)"
     )
     .bind(workspace_id)
     .bind(title)
     .bind(description)
     .bind(due_date)
+    .bind(reminder_at)
     .execute(&state.pool)
     .await
     .map_err(|e| e.to_string())?;
@@ -108,6 +110,7 @@ pub async fn update_task(
     description: Option<String>,
     due_date: Option<String>,
     status: Option<String>,
+    reminder_at: Option<String>,
 ) -> Result<(), String> {
     sqlx::query(
         "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = ?)"
@@ -117,30 +120,67 @@ pub async fn update_task(
     .await
     .map_err(|e| e.to_string())?;
 
-    if let Some(st) = status {
-        sqlx::query(
-            "UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ? WHERE id = ?"
-        )
-        .bind(title)
-        .bind(description)
-        .bind(due_date)
-        .bind(st)
+    let st = status.unwrap_or_else(|| "TODO".to_string());
+    sqlx::query(
+        "UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ?, reminder_at = ?, reminder_sent = 0 WHERE id = ?"
+    )
+    .bind(title)
+    .bind(description)
+    .bind(due_date)
+    .bind(st)
+    .bind(reminder_at)
+    .bind(task_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_task_reminder(
+    state: State<'_, DbState>,
+    task_id: i64,
+    reminder_at: Option<String>,
+) -> Result<(), String> {
+    sqlx::query("UPDATE tasks SET reminder_at = ?, reminder_sent = 0 WHERE id = ?")
+        .bind(&reminder_at)
         .bind(task_id)
         .execute(&state.pool)
         .await
         .map_err(|e| e.to_string())?;
-    } else {
-        sqlx::query(
-            "UPDATE tasks SET title = ?, description = ?, due_date = ? WHERE id = ?"
-        )
-        .bind(title)
-        .bind(description)
-        .bind(due_date)
+
+    sqlx::query(
+        "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = ?)"
+    )
+    .bind(task_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_task_reminder(
+    state: State<'_, DbState>,
+    task_id: i64,
+) -> Result<(), String> {
+    sqlx::query("UPDATE tasks SET reminder_at = NULL, reminder_sent = 0 WHERE id = ?")
         .bind(task_id)
         .execute(&state.pool)
         .await
         .map_err(|e| e.to_string())?;
-    }
+
+    sqlx::query(
+        "UPDATE workspaces SET updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT workspace_id FROM tasks WHERE id = ?)"
+    )
+    .bind(task_id)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
