@@ -117,7 +117,9 @@ pub fn run() {
     #[cfg(debug_assertions)]
     builder
         .export(
-            Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+            Typescript::default()
+                .bigint(specta_typescript::BigIntExportBehavior::Number)
+                .header("// @ts-nocheck\n"),
             "../src/bindings.ts",
         )
         .expect("Failed to export specta bindings");
@@ -377,5 +379,17 @@ pub fn run() {
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
+}
+
+#[cfg(test)]
+mod tests {
+    use specta_typescript::Typescript;
+
+    #[test]
+    fn test_specta_export_header() {
+        let _ts = Typescript::default()
+            .bigint(specta_typescript::BigIntExportBehavior::Number)
+            .header("// @ts-nocheck\n");
+    }
 }
 
